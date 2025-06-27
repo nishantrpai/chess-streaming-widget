@@ -1,0 +1,410 @@
+:root {
+  --bg-primary: #2b2b2b;
+  --bg-secondary: #3a3a3a;
+  --bg-card: #4a4a4a;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-muted: #888888;
+  --green: #4ade80;
+  --red: #ef4444;
+  --accent: #3b82f6;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+#app {
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+}
+
+.screen {
+  display: none;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+.screen.active {
+  display: block;
+}
+
+/* Configuration Screen Styles */
+.config-container {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.config-container h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  transition: background-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  background: #555555;
+}
+
+.form-group input::placeholder {
+  color: var(--text-muted);
+}
+
+.primary-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.primary-btn:hover {
+  background: #2563eb;
+}
+
+.primary-btn:disabled {
+  background: var(--text-muted);
+  cursor: not-allowed;
+}
+
+/* Stats Screen Styles */
+.stats-container {
+  padding: 12px;
+}
+
+.money-spent {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.money-spent .label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+
+.money-spent .value {
+  color: var(--green);
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.tournament-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bg-card);
+}
+
+.tournament-name {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.tournament-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.tournament-position {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+}
+
+.tournament-rank {
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.tournament-total {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.tournament-points {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tournament-status {
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.win-loss-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-card {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  position: relative;
+}
+
+.stat-card.wins {
+  background: linear-gradient(135deg, #065f46, #047857);
+}
+
+.stat-card.losses {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+}
+
+.stat-card .icon {
+  font-size: 18px;
+  margin-bottom: 4px;
+}
+
+.stat-card .label {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-card .value {
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.win-rate {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.win-rate .label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  margin-bottom: 12px;
+}
+
+.win-rate-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.percentage {
+  font-size: 36px;
+  font-weight: bold;
+  color: var(--text-primary);
+}
+
+.record {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.record-wins {
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.record-losses {
+  color: var(--red);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.last-games {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.games-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.games-header .label {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+}
+
+.streak {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.games-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+
+.game-result {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+.game-result.win {
+  background: var(--green);
+  color: white;
+}
+
+.game-result.loss {
+  background: var(--red);
+  color: white;
+}
+
+.game-result.draw {
+  background: var(--text-muted);
+  color: white;
+}
+
+.controls {
+  display: flex;
+  gap: 8px;
+}
+
+.secondary-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.secondary-btn:hover {
+  background: #555555;
+}
+
+/* Loading states */
+.loading {
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Error states */
+.error {
+  color: var(--red);
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Responsive adjustments for very small windows */
+@media (max-width: 320px) {
+  .stats-container {
+    padding: 8px;
+  }
+  
+  .money-spent,
+  .stat-card,
+  .win-rate,
+  .last-games {
+    padding: 16px;
+  }
+  
+  .money-spent .value {
+    font-size: 24px;
+  }
+  
+  .stat-card .value {
+    font-size: 28px;
+  }
+  
+  .percentage {
+    font-size: 32px;
+  }
+}

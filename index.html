@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/chess-icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#2b2b2b" />
+    <meta name="description" content="Chess streaming widget for Lichess and Chess.com" />
+    <link rel="manifest" href="/manifest.json" />
+    <title>Chess Streaming Widget</title>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Screen 1: Configuration -->
+      <div id="config-screen" class="screen active">
+        <div class="config-container">
+          <h2>Chess Streaming Widget</h2>
+          <div class="form-group">
+            <label for="platform">Platform</label>
+            <select id="platform">
+              <option value="lichess">Lichess</option>
+              <option value="chess.com">Chess.com</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" id="username" placeholder="Enter your username" />
+          </div>
+          <div class="form-group">
+            <label for="tournament-link">Tournament Link (Optional)</label>
+            <input type="text" id="tournament-link" placeholder="Paste tournament URL" />
+          </div>
+          <button id="start-tracking" class="primary-btn">Start Tracking</button>
+        </div>
+      </div>
+
+      <!-- Screen 2: Stats Display -->
+      <div id="stats-screen" class="screen">
+        <div class="stats-container">
+          <div class="money-spent">
+            <div class="label" id="rating-label">RATING</div>
+            <div class="value" id="rating">Loading...</div>
+            <div class="tournament-info" id="tournament-info" style="display: none;">
+              <div class="tournament-name" id="tournament-name"></div>
+              <div class="tournament-details">
+                <div class="tournament-position">
+                  <span class="tournament-rank" id="tournament-rank">-</span>
+                  <span class="tournament-total" id="tournament-total">/ -</span>
+                </div>
+                <div class="tournament-points" id="tournament-points">- pts</div>
+              </div>
+              <div class="tournament-status" id="tournament-status"></div>
+            </div>
+          </div>
+          
+          <div class="win-loss-container">
+            <div class="stat-card wins">
+              <div class="icon">🏆</div>
+              <div class="label">WINS</div>
+              <div class="value" id="wins">0</div>
+            </div>
+            <div class="stat-card losses">
+              <div class="icon">⚡</div>
+              <div class="label">LOSSES</div>
+              <div class="value" id="losses">0</div>
+            </div>
+          </div>
+
+          <div class="win-rate">
+            <div class="label">WIN RATE</div>
+            <div class="win-rate-main">
+              <div class="percentage" id="win-percentage">0%</div>
+              <div class="record">
+                <div class="record-wins" id="record-wins">0W</div>
+                <div class="record-losses" id="record-losses">0L</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="last-games">
+            <div class="games-header">
+              <span class="label">LAST 10 GAMES</span>
+              <span class="streak" id="streak">0 WIN STREAK</span>
+            </div>
+            <div class="games-grid" id="games-grid">
+              <!-- Games will be populated here -->
+            </div>
+          </div>
+
+          <div class="controls">
+            <button id="refresh-stats" class="secondary-btn">Refresh</button>
+            <button id="back-to-config" class="secondary-btn">Settings</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>
