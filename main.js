@@ -537,9 +537,16 @@ class ChessWidget {
       if (tournamentInfoDiv) tournamentInfoDiv.style.display = 'block';
       if (ratingLabel) ratingLabel.textContent = 'TOURNAMENT RATING';
       
-      // Set tournament name
+      // Set tournament name with highlighting
       if (tournamentName) {
         tournamentName.textContent = this.stats.tournamentName || `${tournamentInfo.platform.toUpperCase()} Tournament`;
+        
+        // Add highlighting for active tournament
+        if (this.stats.tournamentStatus === 'Live' || this.stats.tournamentStatus === 'Participating') {
+          tournamentName.classList.add('highlighted');
+        } else {
+          tournamentName.classList.remove('highlighted');
+        }
       }
       
       // Set tournament position and total players
@@ -575,9 +582,10 @@ class ChessWidget {
       }
       
     } else {
-      // Hide tournament section
+      // Hide tournament section and clean up highlighting
       if (tournamentInfoDiv) tournamentInfoDiv.style.display = 'none';
       if (ratingLabel) ratingLabel.textContent = 'RATING';
+      if (tournamentName) tournamentName.classList.remove('highlighted');
     }
   }
 
