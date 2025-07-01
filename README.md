@@ -6,6 +6,9 @@ A modern, responsive chess streaming widget designed for streamers who want to d
 
 - **Dual Platform Support**: Works with both Lichess and Chess.com
 - **Real-time Stats**: Displays rating, wins, losses, win rate, and current streak
+- **Auto Tournament Detection**: Automatically detects if you're playing in a tournament
+- **Tournament-Specific Ratings**: Shows appropriate rating (bullet/blitz/rapid) based on tournament type
+- **Live Tournament Tracking**: Shows your position, points, and total players when in tournaments
 - **Last 10 Games**: Visual representation of recent game results
 - **Streamer-Friendly**: Optimized for small window sizes (perfect for overlay)
 - **PWA Ready**: Can be installed as a Progressive Web App
@@ -32,16 +35,20 @@ A modern, responsive chess streaming widget designed for streamers who want to d
 ### Configuration (Screen 1)
 1. **Select Platform**: Choose between Lichess or Chess.com
 2. **Enter Username**: Your chess platform username
-3. **Tournament Link**: (Optional) Paste specific tournament URL
-4. **Start Tracking**: Click to begin displaying stats
+3. **Start Tracking**: Click to begin displaying stats
 
 ### Stats Display (Screen 2)
 The widget shows:
-- **Rating**: Current rating from the selected platform
+- **Rating**: Current rating from the selected platform (tournament-specific when in tournament)
 - **Wins/Losses**: Win and loss counts with visual cards
 - **Win Rate**: Percentage with W/L record
 - **Last 10 Games**: Color-coded game results (Green=Win, Red=Loss, Gray=Draw)
 - **Current Streak**: Win or loss streak indicator
+- **Tournament Info**: When in a tournament:
+  - Tournament name (highlighted when live)
+  - Your current position (#X / Total players)
+  - Tournament points earned
+  - Tournament status (Live, Upcoming, Finished)
 
 ## For Streamers
 
@@ -49,7 +56,8 @@ The widget shows:
 - **Window Size**: Designed for 360px width (mobile-friendly)
 - **Placement**: Perfect for top-right corner overlay
 - **Always On Top**: Use browser's picture-in-picture or window manager
-- **Auto-refresh**: Use the refresh button to update stats during stream
+- **Auto-refresh**: Widget automatically refreshes when you're in a tournament
+- **Tournament Detection**: No need to manually enter tournament URLs - detection is automatic!
 
 ### PWA Installation
 1. Open the widget in Chrome/Edge

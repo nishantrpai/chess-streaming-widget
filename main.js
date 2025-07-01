@@ -9,7 +9,6 @@ class ChessWidget {
   constructor() {
     this.currentPlatform = 'lichess';
     this.currentUsername = '';
-    this.tournamentLink = '';
     this.refreshInterval = null; // For auto-refresh
     this.stats = {
       rating: 0,
@@ -26,6 +25,7 @@ class ChessWidget {
       tournamentTotalPlayers: null,
       tournamentStatus: '',
       tournamentName: '',
+      tournamentType: '', // bullet, blitz, rapid, classical
       isInTournament: false
     };
     this.init();
@@ -52,12 +52,10 @@ class ChessWidget {
       const config = JSON.parse(stored);
       document.getElementById('platform').value = config.platform || 'lichess';
       document.getElementById('username').value = config.username || '';
-      document.getElementById('tournament-link').value = config.tournamentLink || '';
       
       if (config.username) {
         this.currentPlatform = config.platform;
         this.currentUsername = config.username;
-        this.tournamentLink = config.tournamentLink;
         this.showStatsScreen();
         this.refreshStats();
       }
@@ -67,8 +65,7 @@ class ChessWidget {
   saveConfig() {
     const config = {
       platform: this.currentPlatform,
-      username: this.currentUsername,
-      tournamentLink: this.tournamentLink
+      username: this.currentUsername
     };
     localStorage.setItem('chess-widget-config', JSON.stringify(config));
   }
@@ -76,7 +73,6 @@ class ChessWidget {
   async startTracking() {
     const platform = document.getElementById('platform').value;
     const username = document.getElementById('username').value.trim();
-    const tournamentLink = document.getElementById('tournament-link').value.trim();
 
     if (!username) {
       this.showError('Please enter a username');
@@ -85,7 +81,6 @@ class ChessWidget {
 
     this.currentPlatform = platform;
     this.currentUsername = username;
-    this.tournamentLink = tournamentLink;
     
     this.saveConfig();
     this.showStatsScreen();
@@ -133,9 +128,8 @@ class ChessWidget {
       
       this.updateUI();
       
-      // Set up auto-refresh for tournament mode
-      const tournamentInfo = this.parseTournamentUrl(this.tournamentLink);
-      if (tournamentInfo) {
+      // Set up auto-refresh if player is in a tournament
+      if (this.stats.isInTournament) {
         this.startAutoRefresh();
       } else {
         this.stopAutoRefresh();
@@ -204,26 +198,56 @@ class ChessWidget {
   }
 
   async fetchLichessStats() {
-    // Check if we have a tournament link
-    const tournamentInfo = this.parseTournamentUrl(this.tournamentLink);
+    // First, check if user is currently playing in any tournaments
+    const currentTournaments = await this.fetchCurrentLichessTournaments();
     
-    if (tournamentInfo && tournamentInfo.platform === 'lichess') {
-      // Fetch tournament-specific stats
+    let tournamentInfo = null;
+    let rating = 1500;
+    
+    if (currentTournaments && currentTournaments.length > 0) {
+      // Player is in tournament(s), use the most recent one
+      tournamentInfo = currentTournaments[0];
+      this.stats.isInTournament = true;
+      this.stats.tournamentName = tournamentInfo.fullName || 'Lichess Tournament';
+      this.stats.tournamentType = tournamentInfo.perf || 'blitz';
+      this.stats.tournamentTotalPlayers = tournamentInfo.nbPlayers;
+      this.stats.tournamentStatus = this.getLichessTournamentStatus(tournamentInfo);
+      
+      // Get user's position in tournament
       try {
-        const games = await this.fetchLichessTournamentStats(tournamentInfo);
+        const standings = await this.fetchLichessTournamentStandings(tournamentInfo.id);
+        const playerEntry = standings.players?.find(p => 
+          p.name.toLowerCase() === this.currentUsername.toLowerCase()
+        );
         
-        // Get user rating from profile
-        const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
-        const profile = profileResponse.ok ? await profileResponse.json() : {};
-        const rating = profile.perfs?.classical?.rating || 
-                      profile.perfs?.rapid?.rating || 
-                      profile.perfs?.blitz?.rating || 1500;
-        
-        this.processGames(games, 'lichess', rating);
-        return;
-      } catch (error) {
-        console.error('Tournament fetch failed, falling back to recent games:', error);
+        if (playerEntry) {
+          this.stats.tournamentPosition = playerEntry.rank;
+          this.stats.tournamentPoints = playerEntry.score;
+        }
+      } catch (standingsError) {
+        console.log('Could not fetch tournament standings:', standingsError);
       }
+      
+      // Fetch tournament games
+      try {
+        const tournamentGames = await this.fetchLichessTournamentGames(tournamentInfo.id);
+        if (tournamentGames && tournamentGames.length > 0) {
+          // Get rating from tournament performance or user profile
+          const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
+          const profile = profileResponse.ok ? await profileResponse.json() : {};
+          rating = this.getRatingByTournamentType(profile, this.stats.tournamentType);
+          
+          this.processGames(tournamentGames, 'lichess', rating);
+          return;
+        }
+      } catch (tournamentGamesError) {
+        console.log('Could not fetch tournament games:', tournamentGamesError);
+      }
+    } else {
+      // Not in tournament, fetch regular stats
+      this.stats.isInTournament = false;
+      this.stats.tournamentName = '';
+      this.stats.tournamentType = '';
     }
     
     // Fallback to regular profile stats
@@ -233,10 +257,10 @@ class ChessWidget {
     }
     const profile = await profileResponse.json();
 
-    // Get classical rating (or rapid if classical not available)
-    const rating = profile.perfs?.classical?.rating || 
-                  profile.perfs?.rapid?.rating || 
-                  profile.perfs?.blitz?.rating || 1500;
+    // Get rating (classical > rapid > blitz)
+    rating = profile.perfs?.classical?.rating || 
+             profile.perfs?.rapid?.rating || 
+             profile.perfs?.blitz?.rating || 1500;
 
     // Fetch recent games
     const gamesResponse = await fetch(`https://lichess.org/api/games/user/${this.currentUsername}?max=50&rated=true&perfType=classical,rapid,blitz`);
@@ -258,13 +282,8 @@ class ChessWidget {
 
   async fetchChessComStats() {
     console.log('Fetching Chess.com stats for:', this.currentUsername);
-    console.log('Tournament link:', this.tournamentLink);
     
     try {
-      // Check if we have a tournament link
-      const tournamentInfo = this.parseTournamentUrl(this.tournamentLink);
-      console.log('Tournament info:', tournamentInfo);
-      
       // Fetch user profile and stats using chess-web-api
       const profileResponse = await chessAPI.getPlayer(this.currentUsername);
       if (!profileResponse || !profileResponse.body) {
@@ -279,37 +298,62 @@ class ChessWidget {
       const stats = statsResponse.body;
       console.log('Stats fetched:', stats);
 
-      // Get rating from rapid, blitz, or daily
-      const rating = stats.chess_rapid?.last?.rating || 
-                    stats.chess_blitz?.last?.rating || 
-                    stats.chess_bullet?.last?.rating ||
-                    stats.chess_daily?.last?.rating || 1200;
+      // Check if player is currently in any tournaments
+      const currentTournaments = await this.fetchCurrentChessComTournaments();
       
-      console.log('Using rating:', rating);
-
+      let rating = 1200;
       let games = [];
       
-      if (tournamentInfo && tournamentInfo.platform === 'chess.com') {
-        // Fetch tournament-specific games
-        console.log('Fetching tournament-specific games...');
+      if (currentTournaments && currentTournaments.length > 0) {
+        // Player is in tournament(s)
+        const tournament = currentTournaments[0];
+        this.stats.isInTournament = true;
+        this.stats.tournamentName = tournament.name || 'Chess.com Tournament';
+        this.stats.tournamentType = this.detectChessComTournamentType(tournament);
+        this.stats.tournamentStatus = 'Live';
+        
+        // Get rating based on tournament type
+        rating = this.getChessComRatingByType(stats, this.stats.tournamentType);
+        
+        // Try to get tournament position
         try {
-          games = await this.fetchChessComTournamentStats(tournamentInfo);
-          console.log('Tournament games fetched:', games.length);
-        } catch (error) {
-          console.error('Tournament fetch failed, falling back to recent games:', error);
-          games = await this.fetchChessComRecentGames();
+          const tournamentData = await this.fetchChessComTournamentData(tournament.id);
+          if (tournamentData) {
+            this.stats.tournamentTotalPlayers = tournamentData.totalPlayers;
+            const playerPosition = this.findPlayerInLeaderboard(tournamentData.leaderboard, this.currentUsername);
+            if (playerPosition) {
+              this.stats.tournamentPosition = playerPosition.rank;
+              this.stats.tournamentPoints = playerPosition.points;
+            }
+          }
+        } catch (tournamentError) {
+          console.log('Could not fetch tournament data:', tournamentError);
         }
+        
+        // Get recent tournament games
+        games = await this.getRecentTournamentGames();
       } else {
+        // Not in tournament, use regular rating
+        this.stats.isInTournament = false;
+        this.stats.tournamentName = '';
+        this.stats.tournamentType = '';
+        
+        // Get best available rating
+        rating = stats.chess_rapid?.last?.rating || 
+                stats.chess_blitz?.last?.rating || 
+                stats.chess_bullet?.last?.rating ||
+                stats.chess_daily?.last?.rating || 1200;
+        
         // Fetch regular recent games
-        console.log('Fetching recent games...');
         games = await this.fetchChessComRecentGames();
       }
       
+      console.log('Using rating:', rating);
       console.log('Processing games:', games.length);
       this.processGames(games, 'chess.com', rating);
+      
     } catch (error) {
       console.error('Chess.com API error:', error);
-      // Show more specific error info
       this.showStatsError(`Chess.com API Error: ${error.message}`);
     }
   }
@@ -461,8 +505,7 @@ class ChessWidget {
 
   updateUI() {
     // Update tournament info
-    const tournamentInfo = this.parseTournamentUrl(this.tournamentLink);
-    this.updateTournamentInfo(tournamentInfo);
+    this.updateTournamentInfo();
     
     // Update rating
     document.getElementById('rating').textContent = this.stats.rating;
@@ -523,7 +566,7 @@ class ChessWidget {
     console.error(message);
   }
 
-  updateTournamentInfo(tournamentInfo) {
+  updateTournamentInfo() {
     const tournamentInfoDiv = document.getElementById('tournament-info');
     const tournamentName = document.getElementById('tournament-name');
     const tournamentStatus = document.getElementById('tournament-status');
@@ -532,14 +575,16 @@ class ChessWidget {
     const tournamentPoints = document.getElementById('tournament-points');
     const ratingLabel = document.getElementById('rating-label');
     
-    if (tournamentInfo && this.stats.isInTournament) {
+    if (this.stats.isInTournament) {
       // Show tournament section
       if (tournamentInfoDiv) tournamentInfoDiv.style.display = 'block';
-      if (ratingLabel) ratingLabel.textContent = 'TOURNAMENT RATING';
+      if (ratingLabel) {
+        ratingLabel.textContent = `${this.stats.tournamentType.toUpperCase()} TOURNAMENT RATING`;
+      }
       
       // Set tournament name with highlighting
       if (tournamentName) {
-        tournamentName.textContent = this.stats.tournamentName || `${tournamentInfo.platform.toUpperCase()} Tournament`;
+        tournamentName.textContent = this.stats.tournamentName || 'Tournament';
         
         // Add highlighting for active tournament
         if (this.stats.tournamentStatus === 'Live' || this.stats.tournamentStatus === 'Participating') {
@@ -1087,6 +1132,218 @@ class ChessWidget {
       this.stats.tournamentStatus = 'Tournament Mode';
       
       throw error;
+    }
+  }
+
+  // Helper functions for tournament detection and rating selection
+  async fetchCurrentLichessTournaments() {
+    try {
+      // Check if user is currently in any tournaments by looking at their recent activity
+      const response = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`);
+      if (!response.ok) {
+        return [];
+      }
+      
+      const activities = await response.json();
+      const now = Date.now();
+      const currentTournaments = [];
+      
+      // Look for recent tournament activities
+      for (const activity of activities) {
+        if (activity.tournaments) {
+          for (const tournament of activity.tournaments) {
+            // Check if tournament is currently active (within last 4 hours)
+            const tournamentTime = new Date(tournament.date).getTime();
+            const hoursSinceStart = (now - tournamentTime) / (1000 * 60 * 60);
+            
+            if (hoursSinceStart < 4) {
+              // Fetch full tournament details
+              try {
+                const tournamentResponse = await fetch(`https://lichess.org/api/tournament/${tournament.id}`);
+                if (tournamentResponse.ok) {
+                  const tournamentData = await tournamentResponse.json();
+                  
+                  // Check if tournament is still active
+                  const startTime = tournamentData.startsAt;
+                  const finishTime = tournamentData.finishesAt;
+                  
+                  if (now >= startTime && (!finishTime || now <= finishTime)) {
+                    currentTournaments.push(tournamentData);
+                  }
+                }
+              } catch (error) {
+                console.log('Error fetching tournament details:', error);
+              }
+            }
+          }
+        }
+      }
+      
+      return currentTournaments;
+    } catch (error) {
+      console.log('Error fetching current tournaments:', error);
+      return [];
+    }
+  }
+
+  getLichessTournamentStatus(tournament) {
+    const now = Date.now();
+    const startTime = tournament.startsAt;
+    const finishTime = tournament.finishesAt;
+    
+    if (now < startTime) {
+      return 'Upcoming';
+    } else if (finishTime && now > finishTime) {
+      return 'Finished';
+    } else {
+      return 'Live';
+    }
+  }
+
+  async fetchLichessTournamentStandings(tournamentId) {
+    const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}/standings?nb=200`);
+    if (!response.ok) {
+      throw new Error('Could not fetch tournament standings');
+    }
+    return await response.json();
+  }
+
+  async fetchLichessTournamentGames(tournamentId) {
+    const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}/games/${this.currentUsername}`);
+    if (!response.ok) {
+      return [];
+    }
+    
+    const gamesText = await response.text();
+    const games = gamesText.trim().split('\n').map(line => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    }).filter(game => game !== null);
+    
+    return games;
+  }
+
+  getRatingByTournamentType(profile, tournamentType) {
+    if (!profile.perfs) return 1500;
+    
+    switch (tournamentType) {
+      case 'bullet':
+        return profile.perfs.bullet?.rating || 1500;
+      case 'blitz':
+        return profile.perfs.blitz?.rating || 1500;
+      case 'rapid':
+        return profile.perfs.rapid?.rating || 1500;
+      case 'classical':
+        return profile.perfs.classical?.rating || 1500;
+      default:
+        return profile.perfs.blitz?.rating || 
+               profile.perfs.rapid?.rating || 
+               profile.perfs.classical?.rating || 1500;
+    }
+  }
+
+  // Chess.com tournament detection helpers
+  async fetchCurrentChessComTournaments() {
+    try {
+      // Get player's recent tournaments to see if they're in any active ones
+      const tournamentsResponse = await chessAPI.getPlayerTournaments(this.currentUsername);
+      if (!tournamentsResponse || !tournamentsResponse.body) {
+        return [];
+      }
+      
+      const tournaments = tournamentsResponse.body;
+      const now = Date.now();
+      const activeTournaments = [];
+      
+      // Check for recently started tournaments (within last 4 hours)
+      for (const tournament of tournaments) {
+        if (tournament.url) {
+          const tournamentId = this.extractTournamentIdFromUrl(tournament.url);
+          if (tournamentId) {
+            try {
+              const tournamentResponse = await chessAPI.getTournament(tournamentId);
+              if (tournamentResponse && tournamentResponse.body) {
+                const tournamentData = tournamentResponse.body;
+                
+                // Check if tournament is currently active
+                const startTime = tournamentData.start_time ? new Date(tournamentData.start_time * 1000).getTime() : 0;
+                const endTime = tournamentData.finish_time ? new Date(tournamentData.finish_time * 1000).getTime() : now + 86400000; // Default to 24h if no end time
+                
+                if (now >= startTime && now <= endTime) {
+                  activeTournaments.push({
+                    id: tournamentId,
+                    name: tournamentData.name,
+                    url: tournament.url,
+                    ...tournamentData
+                  });
+                }
+              }
+            } catch (error) {
+              console.log('Error checking tournament:', tournamentId, error);
+            }
+          }
+        }
+      }
+      
+      return activeTournaments;
+    } catch (error) {
+      console.log('Error fetching current Chess.com tournaments:', error);
+      return [];
+    }
+  }
+
+  extractTournamentIdFromUrl(url) {
+    const match = url.match(/\/(?:tournament|arena)\/(\d+)/);
+    return match ? match[1] : null;
+  }
+
+  detectChessComTournamentType(tournament) {
+    // Try to determine tournament type from name or other properties
+    const name = (tournament.name || '').toLowerCase();
+    
+    if (name.includes('bullet')) return 'bullet';
+    if (name.includes('blitz')) return 'blitz';
+    if (name.includes('rapid')) return 'rapid';
+    if (name.includes('daily')) return 'daily';
+    
+    // Default to blitz if can't determine
+    return 'blitz';
+  }
+
+  getChessComRatingByType(stats, tournamentType) {
+    switch (tournamentType) {
+      case 'bullet':
+        return stats.chess_bullet?.last?.rating || 1200;
+      case 'blitz':
+        return stats.chess_blitz?.last?.rating || 1200;
+      case 'rapid':
+        return stats.chess_rapid?.last?.rating || 1200;
+      case 'daily':
+        return stats.chess_daily?.last?.rating || 1200;
+      default:
+        return stats.chess_blitz?.last?.rating || 
+               stats.chess_rapid?.last?.rating || 
+               stats.chess_bullet?.last?.rating || 1200;
+    }
+  }
+
+  async fetchChessComTournamentData(tournamentId) {
+    try {
+      const response = await chessAPI.getTournament(tournamentId);
+      if (response && response.body) {
+        return {
+          ...response.body,
+          totalPlayers: response.body.total_players || 0,
+          leaderboard: response.body.leaderboard || []
+        };
+      }
+      return null;
+    } catch (error) {
+      console.log('Error fetching Chess.com tournament data:', error);
+      return null;
     }
   }
 }
