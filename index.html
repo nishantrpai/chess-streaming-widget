@@ -7,6 +7,8 @@
     <meta name="theme-color" content="#2b2b2b" />
     <meta name="description" content="Chess streaming widget for Lichess and Chess.com" />
     <link rel="manifest" href="/manifest.json" />
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <title>Chess Streaming Widget</title>
   </head>
   <body>
@@ -18,13 +20,29 @@
           <div class="form-group">
             <label for="platform">Platform</label>
             <select id="platform">
-              <option value="lichess">Lichess</option>
               <option value="chess.com">Chess.com</option>
+              <option value="lichess">Lichess</option>
             </select>
           </div>
           <div class="form-group">
             <label for="username">Username</label>
             <input type="text" id="username" placeholder="Enter your username" />
+          </div>
+          <div class="form-group">
+            <label for="rating-type">Rating Type</label>
+            <select id="rating-type">
+              <option value="best">Best Available</option>
+              <option value="classical">Classical</option>
+              <option value="rapid">Rapid</option>
+              <option value="blitz">Blitz</option>
+              <option value="bullet">Bullet (Chess.com only)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="show-sponsor">
+              <input type="checkbox" id="show-sponsor" style="margin-right: 8px;">
+              Show sponsor section
+            </label>
           </div>
           <button id="start-tracking" class="primary-btn">Start Tracking</button>
         </div>
@@ -33,6 +51,11 @@
       <!-- Screen 2: Stats Display -->
       <div id="stats-screen" class="screen">
         <div class="stats-container">
+          <!-- Settings Icon -->
+          <div class="settings-icon" id="settings-icon" title="Settings">
+            <i data-lucide="settings"></i>
+          </div>
+          
           <div class="money-spent">
             <div class="label" id="rating-label">RATING</div>
             <div class="value" id="rating">Loading...</div>
@@ -51,14 +74,43 @@
           
           <div class="win-loss-container">
             <div class="stat-card wins">
-              <div class="icon">🏆</div>
+              <div class="icon"><i data-lucide="trophy"></i></div>
               <div class="label">WINS</div>
-              <div class="value" id="wins">0</div>
+              <div class="value-container">
+                <button class="adjust-btn minus" data-type="wins" data-action="decrease">
+                  <i data-lucide="minus"></i>
+                </button>
+                <div class="value" id="wins">0</div>
+                <button class="adjust-btn plus" data-type="wins" data-action="increase">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
             </div>
             <div class="stat-card losses">
-              <div class="icon">⚡</div>
+              <div class="icon"><i data-lucide="zap"></i></div>
               <div class="label">LOSSES</div>
-              <div class="value" id="losses">0</div>
+              <div class="value-container">
+                <button class="adjust-btn minus" data-type="losses" data-action="decrease">
+                  <i data-lucide="minus"></i>
+                </button>
+                <div class="value" id="losses">0</div>
+                <button class="adjust-btn plus" data-type="losses" data-action="increase">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+            </div>
+            <div class="stat-card draws">
+              <div class="icon"><i data-lucide="equal"></i></div>
+              <div class="label">DRAWS</div>
+              <div class="value-container">
+                <button class="adjust-btn minus" data-type="draws" data-action="decrease">
+                  <i data-lucide="minus"></i>
+                </button>
+                <div class="value" id="draws">0</div>
+                <button class="adjust-btn plus" data-type="draws" data-action="increase">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -69,6 +121,7 @@
               <div class="record">
                 <div class="record-wins" id="record-wins">0W</div>
                 <div class="record-losses" id="record-losses">0L</div>
+                <div class="record-draws" id="record-draws">0D</div>
               </div>
             </div>
           </div>
@@ -83,9 +136,30 @@
             </div>
           </div>
 
-          <div class="controls">
-            <button id="refresh-stats" class="secondary-btn">Refresh</button>
-            <button id="back-to-config" class="secondary-btn">Settings</button>
+          <!-- Sponsor Section -->
+          <div class="sponsor-section" id="sponsor-section" style="display: none;">
+            <div class="sponsor-upload" id="sponsor-upload">
+              <div class="sponsor-upload-icon"><i data-lucide="image"></i></div>
+              <div>Click to upload sponsor image</div>
+              <input type="file" id="sponsor-file" accept="image/*">
+            </div>
+            <div id="sponsor-display" style="display: none;">
+              <img id="sponsor-image" class="sponsor-image" alt="Sponsor">
+              <div class="sponsor-controls">
+                <button class="sponsor-btn" id="change-sponsor">
+                  <i data-lucide="edit-2"></i> Change
+                </button>
+                <button class="sponsor-btn" id="remove-sponsor">
+                  <i data-lucide="trash-2"></i> Remove
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div class="last-updated">
+            <i data-lucide="refresh-cw" class="update-icon"></i>
+            <span id="last-updated">0s</span>
+            <span id="next-refresh" style="margin-left: 8px; color: #888;"></span>
           </div>
         </div>
       </div>
