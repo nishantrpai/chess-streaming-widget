@@ -2014,3 +2014,41 @@ function getElementByIdSafe(id) {
   }
   return element;
 }
+
+// Force refresh utility function for development
+window.forceRefresh = function() {
+  console.log('Clearing cache and reloading...');
+  
+  // Clear localStorage
+  localStorage.clear();
+  
+  // Clear sessionStorage
+  sessionStorage.clear();
+  
+  // Unregister service worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+      for(let registration of registrations) {
+        registration.unregister();
+      }
+    });
+  }
+  
+  // Clear all caches
+  if ('caches' in window) {
+    caches.keys().then(function(names) {
+      for (let name of names) {
+        caches.delete(name);
+      }
+    });
+  }
+  
+  // Force reload with cache bypass
+  window.location.reload(true);
+};
+
+// Auto-clear cache in development
+if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+  console.log('Development mode detected. Cache clearing enabled.');
+  console.log('To force refresh and clear all cache, run: forceRefresh()');
+}

@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#2b2b2b" />
     <meta name="description" content="Chess streaming widget for Lichess and Chess.com" />
+    <!-- Prevent caching during development -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="manifest" href="/manifest.json" />
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -107,7 +111,7 @@
               </div>
             </div>
             <div class="stat-card losses">
-              <div class="icon"><i data-lucide="zap"></i></div>
+              <div class="icon"><i data-lucide="heart-crack"></i></div>
               <div class="label">LOSSES</div>
               <div class="value-container">
                 <button class="adjust-btn minus" data-type="losses" data-action="decrease">
