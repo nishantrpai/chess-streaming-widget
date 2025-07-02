@@ -53,12 +53,18 @@ class ChessWidget {
   bindEvents() {
     const startBtn = document.getElementById('start-tracking');
     const settingsIcon = document.getElementById('settings-icon');
+    const showSponsorCheckbox = document.getElementById('show-sponsor');
 
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startTracking());
     }
     if (settingsIcon) {
       settingsIcon.addEventListener('click', () => this.backToConfig());
+    }
+    if (showSponsorCheckbox) {
+      showSponsorCheckbox.addEventListener('change', (e) => {
+        this.toggleSponsorConfig(e.target.checked);
+      });
     }
     
     // Add event listeners for adjustment buttons
@@ -153,12 +159,29 @@ class ChessWidget {
     const stored = localStorage.getItem('chess-widget-config');
     if (stored) {
       const config = JSON.parse(stored);
-      document.getElementById('platform').value = config.platform || 'lichess';
-      document.getElementById('username').value = config.username || '';
+      const platformEl = document.getElementById('platform');
+      const usernameEl = document.getElementById('username');
+      const ratingTypeEl = document.getElementById('rating-type');
+      const showSponsorEl = document.getElementById('show-sponsor');
+      
+      if (platformEl && platformEl instanceof HTMLSelectElement) {
+        platformEl.value = config.platform || 'lichess';
+      }
+      if (usernameEl && usernameEl instanceof HTMLInputElement) {
+        usernameEl.value = config.username || '';
+      }
+      if (ratingTypeEl && ratingTypeEl instanceof HTMLSelectElement) {
+        ratingTypeEl.value = config.ratingType || 'best';
+      }
+      if (showSponsorEl && showSponsorEl instanceof HTMLInputElement) {
+        showSponsorEl.checked = config.showSponsor || false;
+        this.toggleSponsorConfig(config.showSponsor || false);
+      }
       
       if (config.username) {
         this.currentPlatform = config.platform;
         this.currentUsername = config.username;
+        this.currentRatingType = config.ratingType || 'best';
         this.showStatsScreen();
         this.refreshStats();
       }
@@ -166,16 +189,30 @@ class ChessWidget {
   }
 
   saveConfig() {
+    const platformEl = document.getElementById('platform');
+    const usernameEl = document.getElementById('username');
+    const ratingTypeEl = document.getElementById('rating-type');
+    const showSponsorEl = document.getElementById('show-sponsor');
+    
     const config = {
       platform: this.currentPlatform,
-      username: this.currentUsername
+      username: this.currentUsername,
+      ratingType: this.currentRatingType,
+      showSponsor: showSponsorEl && showSponsorEl instanceof HTMLInputElement ? showSponsorEl.checked : false
     };
     localStorage.setItem('chess-widget-config', JSON.stringify(config));
   }
 
   async startTracking() {
-    const platform = document.getElementById('platform').value;
-    const username = document.getElementById('username').value.trim();
+    const platformEl = document.getElementById('platform');
+    const usernameEl = document.getElementById('username');
+    const ratingTypeEl = document.getElementById('rating-type');
+
+    if (!platformEl || !usernameEl || !ratingTypeEl) return;
+
+    const platform = platformEl.tagName === 'SELECT' ? platformEl.value : '';
+    const username = usernameEl.tagName === 'INPUT' ? usernameEl.value.trim() : '';
+    const ratingType = ratingTypeEl.tagName === 'SELECT' ? ratingTypeEl.value : '';
 
     if (!username) {
       this.showError('Please enter a username');
@@ -184,6 +221,7 @@ class ChessWidget {
 
     this.currentPlatform = platform;
     this.currentUsername = username;
+    this.currentRatingType = ratingType;
     
     this.saveConfig();
     this.showStatsScreen();
@@ -1772,97 +1810,24 @@ class ChessWidget {
     }
   }
   
-  bindSponsorEvents() {
-    const sponsorUpload = document.getElementById('sponsor-upload');
-    const sponsorFile = document.getElementById('sponsor-file');
-    const changeSponsor = document.getElementById('change-sponsor');
-    const removeSponsor = document.getElementById('remove-sponsor');
-    const showSponsorCheckbox = document.getElementById('show-sponsor');
-    
-    if (sponsorUpload && sponsorFile) {
-      sponsorUpload.addEventListener('click', () => {
-        sponsorFile.click();
-      });
-      
-      sponsorFile.addEventListener('change', (e) => {
-        this.handleSponsorUpload(e);
-      });
-    }
-    
-    if (changeSponsor) {
-      changeSponsor.addEventListener('click', () => {
-        sponsorFile?.click();
-      });
-    }
-    
-    if (removeSponsor) {
-      removeSponsor.addEventListener('click', () => {
-        this.removeSponsorImage();
-      });
-    }
-    
-    if (showSponsorCheckbox) {
-      showSponsorCheckbox.addEventListener('change', (e) => {
-        this.toggleSponsorSection(e.target.checked);
-      });
+  toggleSponsorConfig(show) {
+    const sponsorConfig = document.getElementById('sponsor-config');
+    if (sponsorConfig) {
+      sponsorConfig.style.display = show ? 'block' : 'none';
     }
   }
-  
-  handleSponsorUpload(event) {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        this.setSponsorImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-  
-  setSponsorImage(imageSrc) {
-    const sponsorImage = document.getElementById('sponsor-image');
-    const sponsorUpload = document.getElementById('sponsor-upload');
-    const sponsorDisplay = document.getElementById('sponsor-display');
-    const lastGamesSection = document.querySelector('.last-games');
 
-    if (
-      sponsorImage &&
-      sponsorUpload &&
-      sponsorDisplay &&
-      lastGamesSection
-    ) {
-      sponsorImage.setAttribute('src', imageSrc);
-      sponsorUpload.style.display = 'none';
-      sponsorDisplay.style.display = 'block';
-
-      // Move sponsor section below "Last 10 Games"
-      const sponsorSection = document.getElementById('sponsor-section');
-      if (sponsorSection) {
-        lastGamesSection.insertAdjacentElement('afterend', sponsorSection);
-      }
-
-      // Save to localStorage
-      localStorage.setItem('chess-widget-sponsor', imageSrc);
-    }
-  }
-  
-  removeSponsorImage() {
-    const sponsorUpload = document.getElementById('sponsor-upload');
-    const sponsorDisplay = document.getElementById('sponsor-display');
-    
-    if (sponsorUpload && sponsorDisplay) {
-      sponsorUpload.style.display = 'flex';
-      sponsorDisplay.style.display = 'none';
-      
-      // Remove from localStorage
-      localStorage.removeItem('chess-widget-sponsor');
-    }
-  }
-  
   toggleSponsorSection(show) {
     const sponsorSection = document.getElementById('sponsor-section');
+    const savedSponsor = localStorage.getItem('chess-widget-sponsor');
+    
     if (sponsorSection) {
-      sponsorSection.style.display = show ? 'block' : 'none';
+      // Only show sponsor section if checkbox is checked AND there's an image
+      if (show && savedSponsor) {
+        sponsorSection.style.display = 'block';
+      } else {
+        sponsorSection.style.display = 'none';
+      }
     }
     
     // Save preference
@@ -1870,20 +1835,126 @@ class ChessWidget {
     config.showSponsor = show;
     localStorage.setItem('chess-widget-config', JSON.stringify(config));
   }
+
+  bindSponsorEvents() {
+    const sponsorUploadConfig = document.getElementById('sponsor-upload-config');
+    const sponsorFileConfig = document.getElementById('sponsor-file-config');
+    const removeSponsorConfig = document.getElementById('remove-sponsor-config');
+    
+    if (sponsorUploadConfig && sponsorFileConfig) {
+      sponsorUploadConfig.addEventListener('click', () => {
+        sponsorFileConfig.click();
+      });
+      
+      sponsorFileConfig.addEventListener('change', (e) => {
+        this.handleSponsorUpload(e, true); // true for config mode
+      });
+    }
+    
+    if (removeSponsorConfig) {
+      removeSponsorConfig.addEventListener('click', () => {
+        this.removeSponsorImage();
+      });
+    }
+  }
   
+  handleSponsorUpload(event, isConfig = false) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.setSponsorImage(e.target.result, isConfig);
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+  
+  setSponsorImage(imageSrc, isConfig = false) {
+    console.log('setSponsorImage called:', { imageSrc: imageSrc ? 'image data' : 'no image', isConfig });
+    
+    if (isConfig) {
+      // Update config preview
+      const sponsorPreview = document.getElementById('sponsor-preview');
+      const sponsorPreviewImage = document.getElementById('sponsor-preview-image');
+      
+      if (sponsorPreview && sponsorPreviewImage) {
+        sponsorPreviewImage.src = imageSrc;
+        sponsorPreview.style.display = 'block';
+        console.log('Config preview updated');
+      }
+    }
+    
+    // Update main sponsor image
+    const sponsorImage = document.getElementById('sponsor-image');
+    const sponsorSection = document.getElementById('sponsor-section');
+    const lastGamesSection = document.querySelector('.last-games');
+
+    if (sponsorImage && sponsorSection && lastGamesSection) {
+      sponsorImage.setAttribute('src', imageSrc);
+      
+      // Show the sponsor section
+      sponsorSection.style.display = 'block';
+      console.log('Sponsor section shown');
+
+      // Move sponsor section below "Last 10 Games" if not already there
+      const nextSibling = lastGamesSection.nextElementSibling;
+      if (nextSibling !== sponsorSection) {
+        lastGamesSection.insertAdjacentElement('afterend', sponsorSection);
+        console.log('Sponsor section moved below last games');
+      }
+
+      // Save to localStorage
+      localStorage.setItem('chess-widget-sponsor', imageSrc);
+      console.log('Sponsor image saved to localStorage');
+    } else {
+      console.log('Missing elements:', { 
+        sponsorImage: !!sponsorImage, 
+        sponsorSection: !!sponsorSection, 
+        lastGamesSection: !!lastGamesSection 
+      });
+    }
+  }
+  
+  removeSponsorImage() {
+    // Remove from config preview
+    const sponsorPreview = document.getElementById('sponsor-preview');
+    if (sponsorPreview) {
+      sponsorPreview.style.display = 'none';
+    }
+    
+    // Hide sponsor section
+    const sponsorSection = document.getElementById('sponsor-section');
+    if (sponsorSection) {
+      sponsorSection.style.display = 'none';
+    }
+    
+    // Remove from localStorage
+    localStorage.removeItem('chess-widget-sponsor');
+  }
+
   loadSponsorSettings() {
+    // Load sponsor image
     const savedSponsor = localStorage.getItem('chess-widget-sponsor');
     if (savedSponsor) {
-      this.setSponsorImage(savedSponsor);
+      this.setSponsorImage(savedSponsor, true); // Show in config preview
+      this.setSponsorImage(savedSponsor, false); // Show in main display
+      
+      // Ensure sponsor section is visible
+      const sponsorSection = document.getElementById('sponsor-section');
+      if (sponsorSection) {
+        sponsorSection.style.display = 'block';
+      }
     }
-
+    
+    // Load sponsor section preference and update checkbox
     const config = JSON.parse(localStorage.getItem('chess-widget-config') || '{}');
-    const showSponsorCheckbox = getElementByIdSafe('show-sponsor');
+    const showSponsorCheckbox = document.getElementById('show-sponsor');
     const showSponsor = config.showSponsor || false;
-
+    
     if (showSponsorCheckbox && showSponsorCheckbox.tagName === 'INPUT') {
       showSponsorCheckbox.checked = showSponsor;
     }
+    this.toggleSponsorConfig(showSponsor);
     this.toggleSponsorSection(showSponsor);
   }
 }

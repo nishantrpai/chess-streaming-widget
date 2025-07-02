@@ -17,6 +17,9 @@
       <div id="config-screen" class="screen active">
         <div class="config-container">
           <h2>Chess Streaming Widget</h2>
+          <h3>
+            Display your chess stats live on stream!
+          </h3>
           <div class="form-group">
             <label for="platform">Platform</label>
             <select id="platform">
@@ -44,6 +47,23 @@
               Show sponsor section
             </label>
           </div>
+          
+          <!-- Sponsor Upload Section -->
+          <div class="sponsor-config" id="sponsor-config" style="display: none;">
+            <div class="form-group">
+              <label>Sponsor Image</label>
+              <div class="sponsor-upload" id="sponsor-upload-config">
+                <div class="sponsor-upload-icon"><i data-lucide="image"></i></div>
+                <div>Click to upload sponsor image</div>
+                <input type="file" id="sponsor-file-config" accept="image/*">
+              </div>
+              <div id="sponsor-preview" style="display: none; margin-top: 8px;">
+                <img id="sponsor-preview-image" style="width: 100%; height: 60px; object-fit: cover; border-radius: 4px;" alt="Sponsor Preview">
+                <button type="button" id="remove-sponsor-config" style="margin-top: 4px; padding: 4px 8px; font-size: 10px; background: var(--destructive); color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+              </div>
+            </div>
+          </div>
+          
           <button id="start-tracking" class="primary-btn">Start Tracking</button>
         </div>
       </div>
@@ -138,22 +158,7 @@
 
           <!-- Sponsor Section -->
           <div class="sponsor-section" id="sponsor-section" style="display: none;">
-            <div class="sponsor-upload" id="sponsor-upload">
-              <div class="sponsor-upload-icon"><i data-lucide="image"></i></div>
-              <div>Click to upload sponsor image</div>
-              <input type="file" id="sponsor-file" accept="image/*">
-            </div>
-            <div id="sponsor-display" style="display: none;">
-              <img id="sponsor-image" class="sponsor-image" alt="Sponsor">
-              <div class="sponsor-controls">
-                <button class="sponsor-btn" id="change-sponsor">
-                  <i data-lucide="edit-2"></i> Change
-                </button>
-                <button class="sponsor-btn" id="remove-sponsor">
-                  <i data-lucide="trash-2"></i> Remove
-                </button>
-              </div>
-            </div>
+            <img id="sponsor-image" class="sponsor-image" alt="Sponsor">
           </div>
           
           <div class="last-updated">
