@@ -77,14 +77,14 @@ class ChessWidget {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => this.resetStats());
     }
-    
+
     // Add event listeners for adjustment buttons
     this.bindAdjustmentButtons();
-    
+
     // Add event listeners for sponsor functionality
     this.bindSponsorEvents();
   }
-  
+
   bindAdjustmentButtons() {
     // Use event delegation to handle dynamically added buttons
     document.addEventListener('click', (e) => {
@@ -102,10 +102,10 @@ class ChessWidget {
       }
     });
   }
-  
+
   adjustStat(type, action) {
     let gameAdded = false;
-    
+
     if (type === 'wins') {
       if (action === 'increase') {
         this.stats.wins++;
@@ -164,24 +164,24 @@ class ChessWidget {
         }
       }
     }
-    
+
     // Recalculate streak if a game was added
     if (gameAdded || action === 'decrease') {
       this.recalculateStreak();
     }
-    
+
     // Recalculate score
     const totalGames = this.stats.wins + this.stats.losses + this.stats.draws;
     this.stats.score = totalGames > 0 ? this.stats.wins + (this.stats.draws * 0.5) : 0;
     this.stats.totalGames = totalGames;
-    
+
     // Update UI
     this.updateUI();
-    
+
     // Save the adjustment to localStorage for persistence
     this.saveAdjustments();
   }
-   saveAdjustments() {
+  saveAdjustments() {
     const adjustments = {
       winsAdjustment: this.stats.winsAdjustment || 0,
       lossesAdjustment: this.stats.lossesAdjustment || 0,
@@ -198,7 +198,7 @@ class ChessWidget {
       // Only apply adjustments if they're from today (to reset daily)
       const today = new Date().toDateString();
       const adjustmentDate = new Date(adjustments.timestamp).toDateString();
-      
+
       if (today === adjustmentDate) {
         this.stats.winsAdjustment = adjustments.winsAdjustment || 0;
         this.stats.lossesAdjustment = adjustments.lossesAdjustment || 0;
@@ -215,7 +215,7 @@ class ChessWidget {
       const usernameEl = document.getElementById('username');
       const ratingTypeEl = document.getElementById('rating-type');
       const showSponsorEl = document.getElementById('show-sponsor');
-      
+
       if (platformEl && platformEl instanceof HTMLSelectElement) {
         platformEl.value = config.platform || 'lichess';
       }
@@ -229,7 +229,7 @@ class ChessWidget {
         showSponsorEl.checked = config.showSponsor || false;
         this.toggleSponsorConfig(config.showSponsor || false);
       }
-      
+
       if (config.username) {
         this.currentPlatform = config.platform;
         this.currentUsername = config.username;
@@ -245,7 +245,7 @@ class ChessWidget {
     const usernameEl = document.getElementById('username');
     const ratingTypeEl = document.getElementById('rating-type');
     const showSponsorEl = document.getElementById('show-sponsor');
-    
+
     const config = {
       platform: this.currentPlatform,
       username: this.currentUsername,
@@ -274,7 +274,7 @@ class ChessWidget {
     this.currentPlatform = platform;
     this.currentUsername = username;
     this.currentRatingType = ratingType;
-    
+
     this.saveConfig();
     this.showStatsScreen();
     await this.refreshStats();
@@ -291,7 +291,7 @@ class ChessWidget {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error';
     errorDiv.textContent = message;
-    
+
     const startBtn = document.getElementById('start-tracking');
     startBtn.parentNode.insertBefore(errorDiv, startBtn);
   }
@@ -299,7 +299,7 @@ class ChessWidget {
   showStatsScreen() {
     document.getElementById('config-screen').classList.remove('active');
     document.getElementById('stats-screen').classList.add('active');
-    
+
     // Refresh icons after screen change
     setTimeout(() => refreshIcons(), 100);
   }
@@ -307,7 +307,7 @@ class ChessWidget {
   backToConfig() {
     // Stop auto-refresh when going back to config
     this.stopAutoRefresh();
-    
+
     document.getElementById('stats-screen').classList.remove('active');
     document.getElementById('config-screen').classList.add('active');
   }
@@ -323,22 +323,22 @@ class ChessWidget {
         nextRefreshEl.textContent = '(updating...)';
       }
     }
-    
+
     try {
       if (this.currentPlatform === 'lichess') {
         await this.fetchLichessStats();
       } else {
         await this.fetchChessComStats();
       }
-      
+
       this.updateUI();
-      
+
       // Always start auto-refresh for real-time updates (both tournament and regular play)
       this.startAutoRefresh();
-      
+
       // Update last updated time
       this.stats.lastUpdated = new Date();
-      
+
     } catch (error) {
       console.error('Error fetching stats:', error);
       if (!isBackgroundRefresh) {
@@ -356,7 +356,7 @@ class ChessWidget {
   startAutoRefresh() {
     // Clear existing interval
     this.stopAutoRefresh();
-    
+
     // Refresh every 10 seconds for real-time updates
     this.refreshInterval = setInterval(() => {
       // Respect pause state - only refresh if not paused
@@ -364,7 +364,7 @@ class ChessWidget {
         this.refreshStats(true); // true = background refresh, no loading state
       }
     }, 10000);
-    
+
     // Set next refresh time
     this.nextRefreshTime = Date.now() + 10000;
     this.startRefreshCountdown();
@@ -386,20 +386,20 @@ class ChessWidget {
     if (this.refreshCountdownInterval) {
       clearInterval(this.refreshCountdownInterval);
     }
-    
+
     // Update countdown every second
     this.refreshCountdownInterval = setInterval(() => {
       const nextRefreshEl = document.getElementById('next-refresh');
-      
+
       // Check if paused
       if (this.isPaused) {
         if (nextRefreshEl) nextRefreshEl.textContent = '(paused)';
         return;
       }
-      
+
       const now = Date.now();
       const timeLeft = Math.max(0, Math.ceil((this.nextRefreshTime - now) / 1000));
-      
+
       if (nextRefreshEl) {
         if (timeLeft > 0) {
           nextRefreshEl.textContent = `(next refresh in ${timeLeft}s)`;
@@ -432,7 +432,7 @@ class ChessWidget {
 
   async fetchLichessStats() {
     console.log('Fetching Lichess stats for:', this.currentUsername);
-    
+
     try {
       // First, get user profile for basic data and rating
       const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
@@ -444,10 +444,10 @@ class ChessWidget {
 
       // Check for current tournaments with improved detection
       const currentTournaments = await this.fetchCurrentLichessTournamentsImproved();
-      
+
       let rating = 1500;
       let games = [];
-      
+
       if (currentTournaments && currentTournaments.length > 0) {
         // Player is in tournament(s) - use the most recent/active one
         const tournament = currentTournaments[0];
@@ -456,17 +456,17 @@ class ChessWidget {
         this.stats.tournamentType = tournament.perf || 'blitz';
         this.stats.tournamentTotalPlayers = tournament.nbPlayers;
         this.stats.tournamentStatus = this.getLichessTournamentStatus(tournament);
-        
+
         // Get rating based on tournament type
         rating = this.getLichessRatingByType(userProfile, this.stats.tournamentType);
-        
+
         // Get tournament standings for position and points
         try {
           const standings = await this.fetchLichessTournamentStandings(tournament.id);
-          const playerEntry = standings.players?.find(p => 
+          const playerEntry = standings.players?.find(p =>
             p.name.toLowerCase() === this.currentUsername.toLowerCase()
           );
-          
+
           if (playerEntry) {
             this.stats.tournamentPosition = playerEntry.rank;
             this.stats.tournamentPoints = playerEntry.score;
@@ -474,7 +474,7 @@ class ChessWidget {
         } catch (standingsError) {
           console.log('Could not fetch tournament standings:', standingsError);
         }
-        
+
         // Get tournament games with improved filtering
         try {
           const tournamentGames = await this.fetchLichessTournamentGamesImproved(tournament);
@@ -491,16 +491,16 @@ class ChessWidget {
         this.stats.isInTournament = false;
         this.stats.tournamentName = '';
         this.stats.tournamentType = '';
-        
+
         // Get rating based on user's rating type preference
         rating = this.getLichessRatingByType(userProfile, this.currentRatingType);
       }
-      
+
       // Fallback: Get recent games with improved accuracy
       const recentGames = await this.fetchLichessRecentGamesImproved();
       console.log('Found', recentGames.length, 'recent games');
       this.processGames(recentGames, 'lichess', rating);
-      
+
     } catch (error) {
       console.error('Error fetching Lichess stats:', error);
       throw error;
@@ -510,17 +510,17 @@ class ChessWidget {
   async fetchCurrentLichessTournamentsImproved() {
     try {
       // Try multiple approaches for better tournament detection
-      
+
       // Approach 1: Check user activity for recent tournaments
       const activityResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`);
       if (!activityResponse.ok) {
         return this.fetchCurrentTournamentsAlternative();
       }
-      
+
       const activities = await activityResponse.json();
       const now = Date.now();
       const currentTournaments = [];
-      
+
       // Look through recent activities for tournament participation
       for (const activity of activities) {
         if (activity.tournaments) {
@@ -528,7 +528,7 @@ class ChessWidget {
             // Check if tournament is recent (within last 4 hours)
             const tournamentTime = new Date(tournament.date).getTime();
             const hoursSinceStart = (now - tournamentTime) / (1000 * 60 * 60);
-            
+
             if (hoursSinceStart < 4) {
               try {
                 // Get full tournament details with retry logic
@@ -537,7 +537,7 @@ class ChessWidget {
                   // Check if tournament is currently active
                   const startTime = tournamentData.startsAt;
                   const finishTime = tournamentData.finishesAt;
-                  
+
                   if (now >= startTime && (!finishTime || now <= finishTime)) {
                     currentTournaments.push(tournamentData);
                   }
@@ -549,7 +549,7 @@ class ChessWidget {
           }
         }
       }
-      
+
       return currentTournaments;
     } catch (error) {
       console.log('Error in primary tournament detection, trying alternative:', error);
@@ -564,7 +564,7 @@ class ChessWidget {
       if (!gamesResponse.ok) {
         return [];
       }
-      
+
       const gamesText = await gamesResponse.text();
       const games = gamesText.trim().split('\n').map(line => {
         try {
@@ -573,22 +573,22 @@ class ChessWidget {
           return null;
         }
       }).filter(game => game !== null);
-      
+
       const now = Date.now();
       const recentTournamentIds = new Set();
-      
+
       // Look for recent tournament games (last 4 hours)
       for (const game of games) {
         if (game.tournament) {
           const gameTime = new Date(game.createdAt).getTime();
           const hoursSinceGame = (now - gameTime) / (1000 * 60 * 60);
-          
+
           if (hoursSinceGame < 4) {
             recentTournamentIds.add(game.tournament);
           }
         }
       }
-      
+
       // Fetch details for recent tournaments
       const currentTournaments = [];
       for (const tournamentId of recentTournamentIds) {
@@ -597,7 +597,7 @@ class ChessWidget {
           if (tournamentData) {
             const startTime = tournamentData.startsAt;
             const finishTime = tournamentData.finishesAt;
-            
+
             if (now >= startTime && (!finishTime || now <= finishTime)) {
               currentTournaments.push(tournamentData);
             }
@@ -606,7 +606,7 @@ class ChessWidget {
           console.log('Error fetching tournament details:', error);
         }
       }
-      
+
       return currentTournaments;
     } catch (error) {
       console.log('Error in alternative tournament detection:', error);
@@ -642,7 +642,7 @@ class ChessWidget {
       // Method 1: Try to get tournament-specific games
       const tournamentGamesUrl = `https://lichess.org/api/tournament/${tournament.id}/games/${this.currentUsername}`;
       const response = await fetch(tournamentGamesUrl);
-      
+
       if (response.ok) {
         const gamesText = await response.text();
         const games = gamesText.trim().split('\n').map(line => {
@@ -652,21 +652,21 @@ class ChessWidget {
             return null;
           }
         }).filter(game => game !== null);
-        
+
         if (games.length > 0) {
           return games;
         }
       }
-      
+
       // Method 2: Fallback to filtering recent games by tournament timeframe
       const startTime = tournament.startsAt || (Date.now() - 6 * 60 * 60 * 1000); // 6 hours ago fallback
       const recentGames = await this.fetchLichessRecentGamesImproved();
-      
+
       const tournamentGames = recentGames.filter(game => {
         const gameTime = new Date(game.createdAt).getTime();
         return gameTime >= startTime && (game.tournament === tournament.id || gameTime >= startTime);
       });
-      
+
       return tournamentGames;
     } catch (error) {
       console.log('Error fetching tournament games:', error);
@@ -680,27 +680,27 @@ class ChessWidget {
       const since = Date.now() - 24 * 60 * 60 * 1000; // Last 24 hours
       // IMPORTANT: Add Accept header to get JSON format instead of PGN
       const gamesUrl = `https://lichess.org/api/games/user/${this.currentUsername}?max=50&rated=true&since=${since}&sort=dateDesc&format=json`;
-      
+
       console.log('Fetching Lichess games from:', gamesUrl);
-      
+
       const response = await fetch(gamesUrl, {
         headers: {
           'Accept': 'application/x-ndjson'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error(`Could not fetch games: ${response.status} ${response.statusText}`);
       }
-      
+
       const gamesText = await response.text();
       console.log('Raw Lichess games response length:', gamesText.length);
-      
+
       if (!gamesText.trim()) {
         console.log('No games found in response');
         return [];
       }
-      
+
       const games = gamesText.trim().split('\n').map((line, index) => {
         try {
           const game = JSON.parse(line);
@@ -713,12 +713,12 @@ class ChessWidget {
           return null;
         }
       }).filter(game => game !== null);
-      
+
       console.log('Parsed', games.length, 'games total');
-      
+
       // Sort by creation date (most recent first)
       games.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
+
       return games;
     } catch (error) {
       console.error('Error fetching recent Lichess games:', error);
@@ -730,9 +730,9 @@ class ChessWidget {
     if (!profile || !profile.perfs) {
       return 1500;
     }
-    
+
     const perfs = profile.perfs;
-    
+
     switch (ratingType) {
       case 'bullet':
         return perfs.bullet?.rating || 1500;
@@ -757,7 +757,7 @@ class ChessWidget {
 
   async fetchChessComStats() {
     console.log('Fetching Chess.com stats for:', this.currentUsername);
-    
+
     try {
       // Fetch user profile and stats using chess-web-api
       const profileResponse = await chessAPI.getPlayer(this.currentUsername);
@@ -775,10 +775,10 @@ class ChessWidget {
 
       // Check if player is currently in any tournaments
       const currentTournaments = await this.fetchCurrentChessComTournaments();
-      
+
       let rating = 1200;
       let games = [];
-      
+
       if (currentTournaments && currentTournaments.length > 0) {
         // Player is in tournament(s)
         const tournament = currentTournaments[0];
@@ -786,10 +786,10 @@ class ChessWidget {
         this.stats.tournamentName = tournament.name || 'Chess.com Tournament';
         this.stats.tournamentType = this.detectChessComTournamentType(tournament);
         this.stats.tournamentStatus = 'Live';
-        
+
         // Get rating based on tournament type
         rating = this.getChessComRatingByType(stats, this.stats.tournamentType);
-        
+
         // Try to get tournament position
         try {
           const tournamentData = await this.fetchChessComTournamentData(tournament.id);
@@ -804,7 +804,7 @@ class ChessWidget {
         } catch (tournamentError) {
           console.log('Could not fetch tournament data:', tournamentError);
         }
-        
+
         // Get recent tournament games
         games = await this.getTournamentOnlyGames(tournament);
       } else {
@@ -812,21 +812,21 @@ class ChessWidget {
         this.stats.isInTournament = false;
         this.stats.tournamentName = '';
         this.stats.tournamentType = '';
-        
+
         // Get best available rating
-        rating = stats.chess_rapid?.last?.rating || 
-                stats.chess_blitz?.last?.rating || 
-                stats.chess_bullet?.last?.rating ||
-                stats.chess_daily?.last?.rating || 1200;
-        
+        rating = stats.chess_rapid?.last?.rating ||
+          stats.chess_blitz?.last?.rating ||
+          stats.chess_bullet?.last?.rating ||
+          stats.chess_daily?.last?.rating || 1200;
+
         // Fetch regular recent games
         games = await this.fetchChessComRecentGames();
       }
-      
+
       console.log('Using rating:', rating);
       console.log('Processing games:', games.length);
       this.processGames(games, 'chess.com', rating);
-      
+
     } catch (error) {
       console.error('Chess.com API error:', error);
       this.showStatsError(`Chess.com API Error: ${error.message}`);
@@ -835,7 +835,7 @@ class ChessWidget {
 
   processGames(games, platform, rating) {
     console.log('Processing games:', games.length, 'from platform:', platform);
-    
+
     const recentGames = games.slice(-50); // Take most recent 50 games
     let wins = 0;
     let losses = 0;
@@ -848,7 +848,7 @@ class ChessWidget {
 
       if (platform === 'lichess') {
         const winner = game.winner;
-        
+
         // Get player color - Lichess API has different format
         let playerColor = null;
         if (game.players?.white?.user?.id === this.currentUsername.toLowerCase()) {
@@ -860,7 +860,7 @@ class ChessWidget {
         } else if (game.players?.black?.user?.name === this.currentUsername) {
           playerColor = 'black';
         }
-        
+
         console.log(`Lichess Game ${index + 1}:`, {
           winner: winner,
           playerColor: playerColor,
@@ -868,7 +868,7 @@ class ChessWidget {
           blackUser: game.players?.black?.user,
           status: game.status
         });
-        
+
         if (!winner || game.status === 'draw') {
           result = 'draw';
           draws++;
@@ -885,7 +885,7 @@ class ChessWidget {
         const whitePlayer = game.white?.username?.toLowerCase();
         const blackPlayer = game.black?.username?.toLowerCase();
         const isWhite = whitePlayer === this.currentUsername.toLowerCase();
-        
+
         console.log(`Game ${index + 1}:`, {
           white: game.white?.username,
           black: game.black?.username,
@@ -893,22 +893,22 @@ class ChessWidget {
           blackResult: game.black?.result,
           isWhite: isWhite
         });
-        
+
         // Check for wins
         if ((game.white?.result === 'win' && isWhite) || (game.black?.result === 'win' && !isWhite)) {
           result = 'win';
           wins++;
           isWin = true;
-        } 
+        }
         // Check for draws/stalemate/agreed
-        else if (game.white?.result === 'agreed' || 
-                 game.white?.result === 'stalemate' || 
-                 game.white?.result === 'repetition' ||
-                 game.white?.result === 'insufficient' ||
-                 game.black?.result === 'agreed' ||
-                 game.black?.result === 'stalemate' ||
-                 game.black?.result === 'repetition' ||
-                 game.black?.result === 'insufficient') {
+        else if (game.white?.result === 'agreed' ||
+          game.white?.result === 'stalemate' ||
+          game.white?.result === 'repetition' ||
+          game.white?.result === 'insufficient' ||
+          game.black?.result === 'agreed' ||
+          game.black?.result === 'stalemate' ||
+          game.black?.result === 'repetition' ||
+          game.black?.result === 'insufficient') {
           result = 'draw';
           draws++;
         }
@@ -927,7 +927,7 @@ class ChessWidget {
     // Calculate streak from most recent games
     let currentStreak = 0;
     let streakType = 'win';
-    
+
     for (const game of last10Games) {
       if (game === 'win') {
         if (streakType === 'win') {
@@ -1012,7 +1012,7 @@ class ChessWidget {
   updateUI() {
     // Update tournament info
     this.updateTournamentInfo();
-    
+
     // Update rating
     const ratingEl = document.getElementById('rating');
     if (ratingEl) ratingEl.textContent = String(this.stats.rating);
@@ -1024,7 +1024,7 @@ class ChessWidget {
     const winsEl = document.getElementById('wins');
     const lossesEl = document.getElementById('losses');
     const drawsEl = document.getElementById('draws');
-    
+
     if (winsEl) winsEl.textContent = String(this.stats.wins);
     if (lossesEl) lossesEl.textContent = String(this.stats.losses);
     if (drawsEl) drawsEl.textContent = String(this.stats.draws);
@@ -1034,10 +1034,10 @@ class ChessWidget {
     const recordWinsEl = document.getElementById('record-wins');
     const recordLossesEl = document.getElementById('record-losses');
     const recordDrawsEl = document.getElementById('record-draws');
-    
+
     if (winPercentageEl) {
       // Display score/totalGames (e.g., "1.5/3")
-      const scoreDisplay = this.stats.totalGames > 0 
+      const scoreDisplay = this.stats.totalGames > 0
         ? `${this.stats.score.toFixed(this.stats.score % 1 === 0 ? 0 : 1)}/${this.stats.totalGames}`
         : '0/0';
       winPercentageEl.textContent = scoreDisplay;
@@ -1047,7 +1047,7 @@ class ChessWidget {
     if (recordDrawsEl) recordDrawsEl.textContent = `${this.stats.draws}D`;
 
     // Update streak
-    const streakText = this.stats.currentStreak > 0 
+    const streakText = this.stats.currentStreak > 0
       ? `${this.stats.currentStreak} ${this.stats.streakType.toUpperCase()} STREAK`
       : 'NO STREAK';
     const streakEl = document.getElementById('streak');
@@ -1055,11 +1055,11 @@ class ChessWidget {
 
     // Update last 10 games
     this.updateGamesGrid();
-    
+
     // Update last updated time and start countdown
     this.updateLastUpdatedTime();
     this.startRefreshCountdown();
-    
+
     // Refresh icons after UI update
     refreshIcons();
   }
@@ -1077,7 +1077,7 @@ class ChessWidget {
     games.forEach(result => {
       const gameDiv = document.createElement('div');
       gameDiv.className = `game-result ${result}`;
-      
+
       if (result === 'win') {
         gameDiv.textContent = '';
       } else if (result === 'loss') {
@@ -1088,7 +1088,7 @@ class ChessWidget {
         gameDiv.textContent = '?';
         gameDiv.style.background = '#333';
       }
-      
+
       gamesGrid.appendChild(gameDiv);
     });
   }
@@ -1109,18 +1109,18 @@ class ChessWidget {
     const tournamentTotal = document.getElementById('tournament-total');
     const tournamentPoints = document.getElementById('tournament-points');
     const ratingLabel = document.getElementById('rating-label');
-    
+
     if (this.stats.isInTournament) {
       // Show tournament section
       if (tournamentInfoDiv) tournamentInfoDiv.style.display = 'block';
       if (ratingLabel) {
         ratingLabel.textContent = `${this.stats.tournamentType.toUpperCase()} TOURNAMENT RATING`;
       }
-      
+
       // Set tournament name with highlighting
       if (tournamentName) {
         tournamentName.textContent = this.stats.tournamentName || 'Tournament';
-        
+
         // Add highlighting for active tournament
         if (this.stats.tournamentStatus === 'Live' || this.stats.tournamentStatus === 'Participating') {
           tournamentName.classList.add('highlighted');
@@ -1128,7 +1128,7 @@ class ChessWidget {
           tournamentName.classList.remove('highlighted');
         }
       }
-      
+
       // Set tournament position and total players
       if (tournamentRank && tournamentTotal) {
         if (this.stats.tournamentPosition) {
@@ -1138,14 +1138,14 @@ class ChessWidget {
           tournamentRank.textContent = '- ';
           tournamentRank.style.color = '';
         }
-        
+
         if (this.stats.tournamentTotalPlayers) {
           tournamentTotal.textContent = `/ ${this.stats.tournamentTotalPlayers}`;
         } else {
           tournamentTotal.textContent = '';
         }
       }
-      
+
       // Set tournament points
       if (tournamentPoints) {
         if (this.stats.tournamentPoints !== null && this.stats.tournamentPoints !== undefined && this.stats.tournamentPoints > 0) {
@@ -1154,13 +1154,13 @@ class ChessWidget {
           tournamentPoints.textContent = '0 pts';
         }
       }
-      
+
       // Set tournament status
       if (tournamentStatus) {
         tournamentStatus.textContent = this.stats.tournamentStatus || 'Live Tracking';
         tournamentStatus.style.color = this.getTournamentStatusColor(this.stats.tournamentStatus);
       }
-      
+
     } else {
       // Hide tournament section and clean up highlighting
       if (tournamentInfoDiv) tournamentInfoDiv.style.display = 'none';
@@ -1171,13 +1171,13 @@ class ChessWidget {
 
   getTournamentRankColor(position) {
     if (!position) return '';
-    
+
     if (position === 1) return '#ffd700'; // Gold for 1st
     if (position === 2) return '#c0c0c0'; // Silver for 2nd
     if (position === 3) return '#cd7f32'; // Bronze for 3rd
     if (position <= 10) return '#4ade80'; // Green for top 10
     if (position <= 50) return '#3b82f6'; // Blue for top 50
-    
+
     return ''; // Default color for others
   }
 
@@ -1200,14 +1200,14 @@ class ChessWidget {
   // Tournament parsing helper functions
   parseTournamentUrl(url) {
     if (!url) return null;
-    
+
     // Chess.com tournament URL patterns
     const chessComArenaMatch = url.match(/chess\.com\/play\/arena\/(\d+)/);
     const chessComTournamentMatch = url.match(/chess\.com\/tournament\/(\d+)/);
-    
+
     // Lichess tournament URL patterns
     const lichessMatch = url.match(/lichess\.org\/tournament\/([a-zA-Z0-9]+)/);
-    
+
     if (chessComArenaMatch) {
       return {
         platform: 'chess.com',
@@ -1227,13 +1227,13 @@ class ChessWidget {
         id: lichessMatch[1]
       };
     }
-    
+
     return null;
   }
 
   async fetchTournamentStats(tournamentInfo) {
     if (!tournamentInfo) return null;
-    
+
     try {
       if (tournamentInfo.platform === 'chess.com') {
         return await this.fetchChessComTournamentStats(tournamentInfo);
@@ -1248,29 +1248,29 @@ class ChessWidget {
 
   async fetchChessComTournamentStats(tournamentInfo) {
     console.log('Fetching Chess.com tournament data for:', tournamentInfo);
-    
+
     const tournamentId = tournamentInfo.id;
-    
+
     try {
       // Get tournament details
       console.log('Fetching tournament details for ID:', tournamentId);
       const tournamentResponse = await chessAPI.getTournament(tournamentId);
-      
+
       if (tournamentResponse && tournamentResponse.body) {
         const tournament = tournamentResponse.body;
         console.log('Tournament details:', tournament);
-        
+
         // Update tournament info in stats
         this.stats.tournamentName = tournament.name || 'Chess.com Tournament';
         this.stats.isInTournament = true;
-        
+
         // Try to get tournament standings/leaderboard
         try {
           console.log('Attempting to get tournament leaderboard...');
-          
+
           // For Chess.com, we need to try different approaches to get position
           const leaderboardResponse = await this.fetchChessComTournamentLeaderboard(tournamentId);
-          
+
           if (leaderboardResponse) {
             const playerPosition = this.findPlayerInLeaderboard(leaderboardResponse, this.currentUsername);
             if (playerPosition) {
@@ -1284,23 +1284,23 @@ class ChessWidget {
           console.log('Could not fetch leaderboard:', leaderboardError);
           this.stats.tournamentStatus = 'Participating';
         }
-        
+
         // Fetch tournament games regardless of leaderboard success
         const games = await this.fetchTournamentGames(tournamentInfo, tournament);
         return games;
-        
+
       } else {
         throw new Error('Tournament not found or access denied');
       }
-      
+
     } catch (error) {
       console.error('Chess.com tournament fetch error:', error);
-      
+
       // Even if tournament API fails, try to get recent games and mark as tournament mode
       this.stats.isInTournament = true;
       this.stats.tournamentName = 'Chess.com Tournament';
       this.stats.tournamentStatus = 'Tournament Mode';
-      
+
       return await this.getRecentTournamentGames();
     }
   }
@@ -1308,12 +1308,12 @@ class ChessWidget {
   async fetchChessComTournamentLeaderboard(tournamentId) {
     // Chess.com doesn't have a direct leaderboard API for all tournaments
     // We'll try a few approaches
-    
+
     try {
       // Approach 1: Try direct tournament standings (may not work for all tournaments)
       const standingsUrl = `https://api.chess.com/pub/tournament/${tournamentId}/standings`;
       const response = await fetch(standingsUrl);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Tournament standings:', data);
@@ -1322,12 +1322,12 @@ class ChessWidget {
     } catch (error) {
       console.log('Direct standings approach failed:', error);
     }
-    
+
     // Approach 2: Try to get tournament participants
     try {
       const participantsUrl = `https://api.chess.com/pub/tournament/${tournamentId}/players`;
       const response = await fetch(participantsUrl);
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('Tournament participants:', data);
@@ -1336,19 +1336,19 @@ class ChessWidget {
     } catch (error) {
       console.log('Participants approach failed:', error);
     }
-    
+
     return null;
   }
 
   findPlayerInLeaderboard(leaderboard, username) {
     const lowerUsername = username.toLowerCase();
-    
+
     // Handle different leaderboard formats
     if (Array.isArray(leaderboard)) {
       for (let i = 0; i < leaderboard.length; i++) {
         const player = leaderboard[i];
         const playerName = player.username || player.player || player.name;
-        
+
         if (playerName && playerName.toLowerCase() === lowerUsername) {
           return {
             rank: i + 1,
@@ -1362,7 +1362,7 @@ class ChessWidget {
     } else if (leaderboard.standings) {
       return this.findPlayerInLeaderboard(leaderboard.standings, username);
     }
-    
+
     return null;
   }
 
@@ -1371,17 +1371,17 @@ class ChessWidget {
     try {
       if (tournamentData.start_time) {
         const startTime = new Date(tournamentData.start_time * 1000);
-        const endTime = tournamentData.finish_time ? 
-          new Date(tournamentData.finish_time * 1000) : 
+        const endTime = tournamentData.finish_time ?
+          new Date(tournamentData.finish_time * 1000) :
           new Date(); // If ongoing, use current time
-        
+
         console.log('Fetching games in tournament time range:', startTime, 'to', endTime);
         return await this.getGamesInTimeRange(startTime, endTime);
       }
     } catch (error) {
       console.log('Time range fetch failed:', error);
     }
-    
+
     // Fallback to recent games
     return await this.getRecentTournamentGames();
   }
@@ -1396,20 +1396,20 @@ class ChessWidget {
 
   async getGamesInTimeRange(startTime, endTime) {
     console.log('Fetching games in time range:', startTime, 'to', endTime);
-    
+
     try {
       // Get games from the months covering the tournament period
       const months = this.getMonthsInRange(startTime, endTime);
       let allGames = [];
-      
+
       for (const month of months) {
         try {
           const response = await chessAPI.getPlayerCompleteMonthlyArchives(
-            this.currentUsername, 
-            month.year, 
+            this.currentUsername,
+            month.year,
             month.month
           );
-          
+
           if (response && response.body && response.body.games) {
             allGames = allGames.concat(response.body.games);
           }
@@ -1417,16 +1417,16 @@ class ChessWidget {
           console.error('Error fetching games for month:', month, error);
         }
       }
-      
+
       // Filter games to tournament time range
       const tournamentGames = allGames.filter(game => {
         const gameEndTime = new Date(game.end_time * 1000);
         return gameEndTime >= startTime && gameEndTime <= endTime;
       });
-      
+
       console.log('Found', tournamentGames.length, 'games in tournament time range');
       return tournamentGames;
-      
+
     } catch (error) {
       console.error('Error getting games in time range:', error);
       return [];
@@ -1437,7 +1437,7 @@ class ChessWidget {
     const months = [];
     const current = new Date(startTime.getFullYear(), startTime.getMonth(), 1);
     const end = new Date(endTime.getFullYear(), endTime.getMonth(), 1);
-    
+
     while (current <= end) {
       months.push({
         year: current.getFullYear(),
@@ -1445,39 +1445,39 @@ class ChessWidget {
       });
       current.setMonth(current.getMonth() + 1);
     }
-    
+
     return months;
   }
 
   async getRecentTournamentGames() {
     // Fallback method: get recent games and assume they're from the tournament
     console.log('Using fallback: recent games approximation');
-    
+
     try {
       const now = new Date();
       const currentMonth = {
         year: now.getFullYear(),
         month: now.getMonth() + 1
       };
-      
+
       const response = await chessAPI.getPlayerCompleteMonthlyArchives(
         this.currentUsername,
         currentMonth.year,
         currentMonth.month
       );
-      
+
       if (response && response.body && response.body.games) {
         const allGames = response.body.games;
-        
+
         // Get games from last 6 hours
         const sixHoursAgo = new Date(now.getTime() - (6 * 60 * 60 * 1000));
         const recentGames = allGames.filter(game => {
           const gameEndTime = new Date(game.end_time * 1000);
           return gameEndTime >= sixHoursAgo;
         });
-        
+
         console.log('Found', recentGames.length, 'recent games');
-        
+
         // If too few games, expand to 24 hours
         if (recentGames.length < 3) {
           const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
@@ -1488,12 +1488,12 @@ class ChessWidget {
           console.log('Expanding to 24 hours, found', dayGames.length, 'games');
           return dayGames;
         }
-        
+
         return recentGames;
       }
-      
+
       return [];
-      
+
     } catch (error) {
       console.error('Error in fallback method:', error);
       return [];
@@ -1504,22 +1504,22 @@ class ChessWidget {
     // Fetch games from current month and filter by approximate time
     const now = new Date();
     const currentMonth = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
+
     const gamesResponse = await fetch(`https://api.chess.com/pub/player/${this.currentUsername}/games/${currentMonth}`);
     if (!gamesResponse.ok) {
       throw new Error('Could not fetch games');
     }
-    
+
     const gamesData = await gamesResponse.json();
     let games = gamesData.games || [];
-    
+
     // If we have tournament data, filter games by time
     if (tournamentData && tournamentData.start_time) {
       const tournamentStart = new Date(tournamentData.start_time * 1000);
-      const tournamentEnd = tournamentData.finish_time ? 
-        new Date(tournamentData.finish_time * 1000) : 
+      const tournamentEnd = tournamentData.finish_time ?
+        new Date(tournamentData.finish_time * 1000) :
         new Date(); // If ongoing, use current time
-      
+
       games = games.filter(game => {
         const gameTime = new Date(game.end_time * 1000);
         return gameTime >= tournamentStart && gameTime <= tournamentEnd;
@@ -1528,47 +1528,47 @@ class ChessWidget {
       // If no tournament data, show recent games from today
       const today = new Date();
       const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      
+
       games = games.filter(game => {
         const gameTime = new Date(game.end_time * 1000);
         return gameTime >= todayStart;
       });
     }
-    
+
     return games;
   }
 
   async fetchChessComRecentGames() {
     console.log('Fetching recent Chess.com games...');
-    
+
     try {
       const now = new Date();
       const currentMonth = {
         year: now.getFullYear(),
         month: now.getMonth() + 1
       };
-      
+
       console.log('Fetching games for current month:', currentMonth);
-      
+
       const response = await chessAPI.getPlayerCompleteMonthlyArchives(
         this.currentUsername,
         currentMonth.year,
         currentMonth.month
       );
-      
+
       if (!response || !response.body || !response.body.games) {
         throw new Error('No games data received');
       }
-      
+
       const games = response.body.games;
       console.log('Total games this month:', games.length);
-      
+
       // Get most recent games (last 20)
       const recentGames = games.slice(-20);
       console.log('Using most recent games:', recentGames.length);
-      
+
       return recentGames;
-      
+
     } catch (error) {
       console.error('Error fetching recent games:', error);
       throw error;
@@ -1578,7 +1578,7 @@ class ChessWidget {
   async fetchLichessTournamentStats(tournamentInfo) {
     // Lichess has better tournament API support
     const tournamentId = tournamentInfo.id;
-    
+
     try {
       // Fetch tournament info
       console.log('Fetching Lichess tournament for ID:', tournamentId);
@@ -1586,20 +1586,20 @@ class ChessWidget {
       if (!tournamentResponse.ok) {
         throw new Error('Tournament not found');
       }
-      
+
       const tournamentData = await tournamentResponse.json();
       console.log('Lichess tournament data:', tournamentData);
-      
+
       // Update tournament info in stats
       this.stats.tournamentName = tournamentData.fullName || 'Lichess Tournament';
       this.stats.isInTournament = true;
       this.stats.tournamentTotalPlayers = tournamentData.nbPlayers;
-      
+
       // Determine tournament status
       const now = Date.now();
       const startTime = tournamentData.startsAt;
       const finishTime = tournamentData.finishesAt;
-      
+
       if (now < startTime) {
         this.stats.tournamentStatus = 'Upcoming';
       } else if (finishTime && now > finishTime) {
@@ -1607,21 +1607,21 @@ class ChessWidget {
       } else {
         this.stats.tournamentStatus = 'Live';
       }
-      
+
       // Fetch tournament standings to get player position
       try {
         console.log('Fetching tournament standings...');
         const standingsResponse = await fetch(`https://lichess.org/api/tournament/${tournamentId}/standings?nb=200`);
-        
+
         if (standingsResponse.ok) {
           const standings = await standingsResponse.json();
           console.log('Tournament standings:', standings);
-          
+
           // Find the player in standings
-          const playerEntry = standings.players?.find(p => 
+          const playerEntry = standings.players?.find(p =>
             p.name.toLowerCase() === this.currentUsername.toLowerCase()
           );
-          
+
           if (playerEntry) {
             this.stats.tournamentPosition = playerEntry.rank;
             this.stats.tournamentPoints = playerEntry.score;
@@ -1637,7 +1637,7 @@ class ChessWidget {
         this.stats.tournamentPosition = null;
         this.stats.tournamentPoints = 0;
       }
-      
+
       // Fetch tournament games for the user
       console.log('Fetching tournament games...');
       const gamesResponse = await fetch(`https://lichess.org/api/tournament/${tournamentId}/games/${this.currentUsername}`);
@@ -1645,7 +1645,7 @@ class ChessWidget {
         console.log('No games found for this tournament yet');
         return []; // Player hasn't played any games yet
       }
-      
+
       const gamesText = await gamesResponse.text();
       const games = gamesText.trim().split('\n').map(line => {
         try {
@@ -1654,18 +1654,18 @@ class ChessWidget {
           return null;
         }
       }).filter(game => game !== null);
-      
+
       console.log('Found', games.length, 'tournament games');
       return games;
-      
+
     } catch (error) {
       console.error('Lichess tournament API error:', error);
-      
+
       // Even if tournament API fails, try to mark as tournament mode
       this.stats.isInTournament = true;
       this.stats.tournamentName = 'Lichess Tournament';
       this.stats.tournamentStatus = 'Tournament Mode';
-      
+
       throw error;
     }
   }
@@ -1676,7 +1676,7 @@ class ChessWidget {
     const now = Date.now();
     const startTime = tournament.startsAt;
     const finishTime = tournament.finishesAt;
-    
+
     if (now < startTime) {
       return 'Upcoming';
     } else if (finishTime && now > finishTime) {
@@ -1702,17 +1702,17 @@ class ChessWidget {
       if (!profileResponse || !profileResponse.body) {
         return [];
       }
-      
+
       // Get player's tournament history to find recent/current tournaments
       const tournamentsResponse = await chessAPI.getPlayerTournaments(this.currentUsername);
       if (!tournamentsResponse || !tournamentsResponse.body) {
         return [];
       }
-      
+
       const tournaments = tournamentsResponse.body;
       const now = Date.now();
       const activeTournaments = [];
-      
+
       // Check recent tournaments for active ones
       for (const tournament of tournaments.slice(0, 10)) { // Check last 10 tournaments
         if (tournament.url) {
@@ -1723,13 +1723,13 @@ class ChessWidget {
               const tournamentResponse = await this.fetchTournamentDetails(tournamentId);
               if (tournamentResponse) {
                 const tournamentData = tournamentResponse;
-                
+
                 // Check if tournament is currently active
                 const startTime = tournamentData.start_time ? new Date(tournamentData.start_time * 1000).getTime() : 0;
-                const endTime = tournamentData.finish_time ? 
-                  new Date(tournamentData.finish_time * 1000).getTime() : 
+                const endTime = tournamentData.finish_time ?
+                  new Date(tournamentData.finish_time * 1000).getTime() :
                   now + 86400000; // Default to 24h if no end time
-                
+
                 // Tournament is active if we're between start and end time
                 if (now >= startTime && now <= endTime) {
                   activeTournaments.push({
@@ -1748,7 +1748,7 @@ class ChessWidget {
           }
         }
       }
-      
+
       console.log('Found active tournaments:', activeTournaments);
       return activeTournaments;
     } catch (error) {
@@ -1764,13 +1764,13 @@ class ChessWidget {
       if (response.ok) {
         return await response.json();
       }
-      
+
       // If that fails, try the chess-web-api
       const apiResponse = await chessAPI.getTournament(tournamentId);
       if (apiResponse && apiResponse.body) {
         return apiResponse.body;
       }
-      
+
       return null;
     } catch (error) {
       console.log('Error fetching tournament details:', error);
@@ -1786,12 +1786,12 @@ class ChessWidget {
   detectChessComTournamentType(tournament) {
     // Try to determine tournament type from name or other properties
     const name = (tournament.name || '').toLowerCase();
-    
+
     if (name.includes('bullet')) return 'bullet';
     if (name.includes('blitz')) return 'blitz';
     if (name.includes('rapid')) return 'rapid';
     if (name.includes('daily')) return 'daily';
-    
+
     // Default to blitz if can't determine
     return 'blitz';
   }
@@ -1807,9 +1807,9 @@ class ChessWidget {
       case 'daily':
         return stats.chess_daily?.last?.rating || 1200;
       default:
-        return stats.chess_blitz?.last?.rating || 
-               stats.chess_rapid?.last?.rating || 
-               stats.chess_bullet?.last?.rating || 1200;
+        return stats.chess_blitz?.last?.rating ||
+          stats.chess_rapid?.last?.rating ||
+          stats.chess_bullet?.last?.rating || 1200;
     }
   }
 
@@ -1831,7 +1831,7 @@ class ChessWidget {
         if (leaderboardResponse.ok) {
           const leaderboardData = await leaderboardResponse.json();
           console.log('Tournament leaderboard:', leaderboardData);
-          
+
           if (leaderboardData.standings) {
             leaderboard = leaderboardData.standings;
             totalPlayers = leaderboard.length;
@@ -1851,7 +1851,7 @@ class ChessWidget {
           if (participantsResponse.ok) {
             const participantsData = await participantsResponse.json();
             console.log('Tournament participants:', participantsData);
-            
+
             if (participantsData.players) {
               leaderboard = participantsData.players.map((player, index) => ({
                 username: player.username || player.name,
@@ -1873,7 +1873,7 @@ class ChessWidget {
           const apiResponse = await chessAPI.getTournament(tournamentId);
           if (apiResponse && apiResponse.body) {
             const tournamentData = apiResponse.body;
-            
+
             if (tournamentData.leaderboard) {
               leaderboard = tournamentData.leaderboard;
               totalPlayers = tournamentData.total_players || leaderboard.length;
@@ -1897,7 +1897,7 @@ class ChessWidget {
 
   async getTournamentOnlyGames(tournament) {
     console.log('Fetching tournament-only games for tournament:', tournament.id);
-    
+
     try {
       // Method 1: Try to get tournament rounds/games directly
       const roundGames = await this.fetchTournamentGamesByRounds(tournament.id);
@@ -1905,33 +1905,33 @@ class ChessWidget {
         console.log('Found', roundGames.length, 'games via tournament rounds');
         return roundGames;
       }
-      
+
       // Method 2: Get games from tournament time period and filter by tournament context
       if (tournament.startTime && tournament.endTime) {
         const timeFilteredGames = await this.getGamesInTimeRange(
           new Date(tournament.startTime),
           new Date(tournament.endTime)
         );
-        
+
         // Further filter to ensure these are tournament games
         const filteredTournamentGames = timeFilteredGames.filter(game => {
           // Check if game has tournament context indicators
           return this.isTournamentGame(game, tournament);
         });
-        
+
         console.log('Found', filteredTournamentGames.length, 'tournament games via time filtering');
         return filteredTournamentGames;
       }
-      
+
       // Method 3: Fallback to recent games with tournament indicators
       const recentGames = await this.fetchChessComRecentGames();
       const recentTournamentGames = recentGames.filter(game => {
         return this.isTournamentGame(game, tournament);
       });
-      
+
       console.log('Found', recentTournamentGames.length, 'tournament games via recent filtering');
       return recentTournamentGames;
-      
+
     } catch (error) {
       console.error('Error fetching tournament-only games:', error);
       return [];
@@ -1945,12 +1945,12 @@ class ChessWidget {
       if (!roundsResponse.ok) {
         return [];
       }
-      
+
       const roundsData = await roundsResponse.json();
       console.log('Tournament rounds:', roundsData);
-      
+
       const allTournamentGames = [];
-      
+
       // Get games from each round
       if (roundsData.rounds) {
         for (const round of roundsData.rounds) {
@@ -1958,16 +1958,16 @@ class ChessWidget {
             const roundGamesResponse = await fetch(round.games);
             if (roundGamesResponse.ok) {
               const roundGames = await roundGamesResponse.json();
-              
+
               // Filter games where this user participated
               const userGames = roundGames.games?.filter(game => {
                 const whiteUsername = game.white?.username?.toLowerCase();
                 const blackUsername = game.black?.username?.toLowerCase();
                 const currentUser = this.currentUsername.toLowerCase();
-                
+
                 return whiteUsername === currentUser || blackUsername === currentUser;
               }) || [];
-              
+
               allTournamentGames.push(...userGames);
             }
           } catch (roundError) {
@@ -1975,7 +1975,7 @@ class ChessWidget {
           }
         }
       }
-      
+
       return allTournamentGames;
     } catch (error) {
       console.log('Error fetching tournament rounds:', error);
@@ -1985,7 +1985,7 @@ class ChessWidget {
 
   isTournamentGame(game, tournament) {
     // Check various indicators that this game is part of the tournament
-    
+
     // 1. Time-based check - game should be within tournament timeframe
     if (tournament.startTime && tournament.endTime) {
       const gameTime = new Date(game.end_time * 1000).getTime();
@@ -1993,12 +1993,12 @@ class ChessWidget {
         return false;
       }
     }
-    
+
     // 2. Check for tournament metadata in the game
     if (game.tournament) {
       return true; // Game has tournament field
     }
-    
+
     // 3. Check if game URL contains tournament reference
     if (game.url && tournament.url) {
       const tournamentId = this.extractTournamentIdFromUrl(tournament.url);
@@ -2006,7 +2006,7 @@ class ChessWidget {
         return true;
       }
     }
-    
+
     // 4. Check game rules/time control matches tournament
     if (tournament.time_control && game.time_control) {
       // Compare time controls to see if they match
@@ -2014,18 +2014,18 @@ class ChessWidget {
         return true;
       }
     }
-    
+
     // 5. If game is very recent (last 2 hours) and user is in tournament, likely a tournament game
     if (tournament.startTime) {
       const gameTime = new Date(game.end_time * 1000).getTime();
       const now = Date.now();
       const twoHoursAgo = now - (2 * 60 * 60 * 1000);
-      
+
       if (gameTime >= twoHoursAgo && gameTime >= tournament.startTime) {
         return true;
       }
     }
-    
+
     return false;
   }
 
@@ -2035,9 +2035,9 @@ class ChessWidget {
     try {
       if (typeof tournamentTimeControl === 'string' && typeof gameTimeControl === 'string') {
         return tournamentTimeControl.toLowerCase().includes(gameTimeControl.toLowerCase()) ||
-               gameTimeControl.toLowerCase().includes(tournamentTimeControl.toLowerCase());
+          gameTimeControl.toLowerCase().includes(tournamentTimeControl.toLowerCase());
       }
-      
+
       // For object-based time controls, compare base time
       if (tournamentTimeControl.base_time && gameTimeControl.base_time) {
         return tournamentTimeControl.base_time === gameTimeControl.base_time;
@@ -2045,7 +2045,7 @@ class ChessWidget {
     } catch (error) {
       console.log('Error comparing time controls:', error);
     }
-    
+
     return false;
   }
 
@@ -2055,7 +2055,7 @@ class ChessWidget {
       const now = new Date();
       const timeDiff = now.getTime() - this.stats.lastUpdated.getTime();
       const seconds = Math.floor(timeDiff / 1000);
-      
+
       let timeText = '';
       if (seconds < 60) {
         timeText = `${seconds}s ago`;
@@ -2066,11 +2066,11 @@ class ChessWidget {
         const hours = Math.floor(seconds / 3600);
         timeText = `${hours}h ago`;
       }
-      
+
       lastUpdatedElement.textContent = timeText;
     }
   }
-  
+
   toggleSponsorConfig(show) {
     const sponsorConfig = document.getElementById('sponsor-config');
     if (sponsorConfig) {
@@ -2081,7 +2081,7 @@ class ChessWidget {
   toggleSponsorSection(show) {
     const sponsorSection = document.getElementById('sponsor-section');
     const savedSponsor = localStorage.getItem('chess-widget-sponsor');
-    
+
     if (sponsorSection) {
       // Only show sponsor section if checkbox is checked AND there's an image
       if (show && savedSponsor) {
@@ -2090,7 +2090,7 @@ class ChessWidget {
         sponsorSection.style.display = 'none';
       }
     }
-    
+
     // Save preference
     const config = JSON.parse(localStorage.getItem('chess-widget-config') || '{}');
     config.showSponsor = show;
@@ -2101,24 +2101,24 @@ class ChessWidget {
     const sponsorUploadConfig = document.getElementById('sponsor-upload-config');
     const sponsorFileConfig = document.getElementById('sponsor-file-config');
     const removeSponsorConfig = document.getElementById('remove-sponsor-config');
-    
+
     if (sponsorUploadConfig && sponsorFileConfig) {
       sponsorUploadConfig.addEventListener('click', () => {
         sponsorFileConfig.click();
       });
-      
+
       sponsorFileConfig.addEventListener('change', (e) => {
         this.handleSponsorUpload(e, true); // true for config mode
       });
     }
-    
+
     if (removeSponsorConfig) {
       removeSponsorConfig.addEventListener('click', () => {
         this.removeSponsorImage();
       });
     }
   }
-  
+
   handleSponsorUpload(event, isConfig = false) {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
@@ -2129,22 +2129,22 @@ class ChessWidget {
       reader.readAsDataURL(file);
     }
   }
-  
+
   setSponsorImage(imageSrc, isConfig = false) {
     console.log('setSponsorImage called:', { imageSrc: imageSrc ? 'image data' : 'no image', isConfig });
-    
+
     if (isConfig) {
       // Update config preview
       const sponsorPreview = document.getElementById('sponsor-preview');
       const sponsorPreviewImage = document.getElementById('sponsor-preview-image');
-      
+
       if (sponsorPreview && sponsorPreviewImage) {
         sponsorPreviewImage.src = imageSrc;
         sponsorPreview.style.display = 'block';
         console.log('Config preview updated');
       }
     }
-    
+
     // Update main sponsor image
     const sponsorImage = document.getElementById('sponsor-image');
     const sponsorSection = document.getElementById('sponsor-section');
@@ -2152,7 +2152,7 @@ class ChessWidget {
 
     if (sponsorImage && sponsorSection && lastGamesSection) {
       sponsorImage.setAttribute('src', imageSrc);
-      
+
       // Show the sponsor section
       sponsorSection.style.display = 'block';
       console.log('Sponsor section shown');
@@ -2168,14 +2168,14 @@ class ChessWidget {
       localStorage.setItem('chess-widget-sponsor', imageSrc);
       console.log('Sponsor image saved to localStorage');
     } else {
-      console.log('Missing elements:', { 
-        sponsorImage: !!sponsorImage, 
-        sponsorSection: !!sponsorSection, 
-        lastGamesSection: !!lastGamesSection 
+      console.log('Missing elements:', {
+        sponsorImage: !!sponsorImage,
+        sponsorSection: !!sponsorSection,
+        lastGamesSection: !!lastGamesSection
       });
     }
   }
-  
+
   removeSponsorImage() {
     // Remove from config preview
     const sponsorPreview = document.getElementById('sponsor-preview');
@@ -2183,13 +2183,13 @@ class ChessWidget {
 
       sponsorPreview.style.display = 'none';
     }
-    
+
     // Hide sponsor section
     const sponsorSection = document.getElementById('sponsor-section');
     if (sponsorSection) {
       sponsorSection.style.display = 'none';
     }
-    
+
     // Remove from localStorage
     localStorage.removeItem('chess-widget-sponsor');
   }
@@ -2200,37 +2200,37 @@ class ChessWidget {
     if (savedSponsor) {
       this.setSponsorImage(savedSponsor, true); // Show in config preview
       this.setSponsorImage(savedSponsor, false); // Show in main display
-      
+
       // Ensure sponsor section is visible
       const sponsorSection = document.getElementById('sponsor-section');
       if (sponsorSection) {
         sponsorSection.style.display = 'block';
       }
     }
-    
+
     // Load sponsor section preference and update checkbox
     const config = JSON.parse(localStorage.getItem('chess-widget-config') || '{}');
     const showSponsorCheckbox = document.getElementById('show-sponsor');
     const showSponsor = config.showSponsor || false;
-    
+
     if (showSponsorCheckbox && showSponsorCheckbox.tagName === 'INPUT') {
       showSponsorCheckbox.checked = showSponsor;
     }
     this.toggleSponsorConfig(showSponsor);
     this.toggleSponsorSection(showSponsor);
   }
-  
+
   togglePause() {
     this.isPaused = !this.isPaused;
     const pauseBtn = document.getElementById('pause-refresh-btn');
     const pauseIcon = pauseBtn?.querySelector('i');
-    
+
     if (this.isPaused) {
       // Pause auto-refresh
       this.stopAutoRefresh();
       if (pauseBtn) pauseBtn.classList.add('paused');
       if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'play');
-      
+
       // Update next refresh display
       const nextRefreshEl = document.getElementById('next-refresh');
       if (nextRefreshEl) nextRefreshEl.textContent = '(paused)';
@@ -2238,11 +2238,11 @@ class ChessWidget {
       // Resume auto-refresh
       if (pauseBtn) pauseBtn.classList.remove('paused');
       if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'pause');
-      
+
       // Start auto-refresh again
       this.startAutoRefresh();
     }
-    
+
     // Refresh icons to update the icon change
     refreshIcons();
   }
@@ -2250,27 +2250,27 @@ class ChessWidget {
   updateEloChange() {
     const eloChangeEl = document.getElementById('elo-change');
     const eloChangeValueEl = document.getElementById('elo-change-value');
-    
+
     if (!eloChangeEl || !eloChangeValueEl) return;
-    
+
     // Set initial rating on first update
     if (this.initialRating === null) {
       this.initialRating = this.stats.rating;
       eloChangeEl.style.display = 'none';
       return;
     }
-    
+
     const ratingChange = this.stats.rating - this.initialRating;
-    
+
     if (ratingChange === 0) {
       eloChangeEl.style.display = 'none';
       return;
     }
-    
+
     // Show elo change
     eloChangeEl.style.display = 'block';
     eloChangeEl.className = 'elo-change';
-    
+
     if (ratingChange > 0) {
       eloChangeEl.classList.add('positive');
       eloChangeValueEl.textContent = `+${ratingChange}`;
@@ -2287,11 +2287,11 @@ class ChessWidget {
       this.stats.streakType = 'win';
       return;
     }
-    
+
     const mostRecentGame = this.stats.lastGames[0];
     let streakCount = 0;
     let streakType = mostRecentGame;
-    
+
     // Count consecutive games of the same type from the beginning
     for (const game of this.stats.lastGames) {
       if (game === streakType) {
@@ -2300,7 +2300,7 @@ class ChessWidget {
         break;
       }
     }
-    
+
     // Handle draws (they break streaks)
     if (mostRecentGame === 'draw') {
       this.stats.currentStreak = 0;
@@ -2313,40 +2313,37 @@ class ChessWidget {
 
   resetStats() {
     // Confirm before resetting
-    if (confirm('Are you sure you want to reset all stats to 0? This cannot be undone.')) {
-      // Reset all stats to 0
-      this.stats.wins = 0;
-      this.stats.losses = 0;
-      this.stats.draws = 0;
-      this.stats.score = 0;
-      this.stats.totalGames = 0;
-      this.stats.currentStreak = 0;
-      this.stats.streakType = 'win';
-      this.stats.lastGames = [];
-      
-      // Reset adjustments
-      this.stats.winsAdjustment = 0;
-      this.stats.lossesAdjustment = 0;
-      this.stats.drawsAdjustment = 0;
-      
-      // Clear stored adjustments
-      localStorage.removeItem('chess-widget-adjustments');
-      
-      // Reset initial rating for elo tracking
-      this.initialRating = this.stats.rating;
-      
-      // Update UI
-      this.updateUI();
-      
-      console.log('Stats reset to 0');
-    }
+    // Reset all stats to 0
+    this.stats.wins = 0;
+    this.stats.losses = 0;
+    this.stats.draws = 0;
+    this.stats.score = 0;
+    this.stats.totalGames = 0;
+    this.stats.currentStreak = 0;
+    this.stats.streakType = 'win';
+    this.stats.lastGames = [];
+
+    // Reset adjustments
+    this.stats.winsAdjustment = 0;
+    this.stats.lossesAdjustment = 0;
+    this.stats.drawsAdjustment = 0;
+
+    // Clear stored adjustments
+    localStorage.removeItem('chess-widget-adjustments');
+
+    // Reset initial rating for elo tracking
+    this.initialRating = this.stats.rating;
+
+    // Update UI
+    this.updateUI();
+
+    console.log('Stats reset to 0');
   }
 
-  // ...existing code...
 }
 
 // Add debug function to window for testing
-window.debugChessWidget = function() {
+window.debugChessWidget = function () {
   const widget = window.chessWidget;
   if (widget) {
     console.log('Widget state:', {
@@ -2402,33 +2399,33 @@ function getElementByIdSafe(id) {
 }
 
 // Force refresh utility function for development
-window.forceRefresh = function() {
+window.forceRefresh = function () {
   console.log('Clearing cache and reloading...');
-  
+
   // Clear localStorage
   localStorage.clear();
-  
+
   // Clear sessionStorage
   sessionStorage.clear();
-  
+
   // Unregister service worker
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-      for(let registration of registrations) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      for (let registration of registrations) {
         registration.unregister();
       }
     });
   }
-  
+
   // Clear all caches
   if ('caches' in window) {
-    caches.keys().then(function(names) {
+    caches.keys().then(function (names) {
       for (let name of names) {
         caches.delete(name);
       }
     });
   }
-  
+
   // Force reload with cache bypass
   window.location.reload(true);
 };
