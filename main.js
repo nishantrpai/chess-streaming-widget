@@ -58,6 +58,7 @@ class ChessWidget {
     const settingsIcon = document.getElementById('settings-icon');
     const showSponsorCheckbox = document.getElementById('show-sponsor');
     const pauseBtn = document.getElementById('pause-refresh-btn');
+    const resetBtn = document.getElementById('reset-stats-btn');
 
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startTracking());
@@ -72,6 +73,9 @@ class ChessWidget {
     }
     if (pauseBtn) {
       pauseBtn.addEventListener('click', () => this.togglePause());
+    }
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => this.resetStats());
     }
     
     // Add event listeners for adjustment buttons
@@ -100,30 +104,70 @@ class ChessWidget {
   }
   
   adjustStat(type, action) {
+    let gameAdded = false;
+    
     if (type === 'wins') {
       if (action === 'increase') {
         this.stats.wins++;
         this.stats.winsAdjustment++;
+        // Add a win to the last games (at the beginning for most recent)
+        this.stats.lastGames.unshift('win');
+        if (this.stats.lastGames.length > 10) {
+          this.stats.lastGames.pop(); // Remove oldest if more than 10
+        }
+        gameAdded = true;
       } else if (action === 'decrease' && this.stats.wins > 0) {
         this.stats.wins--;
         this.stats.winsAdjustment--;
+        // Remove the most recent win from last games
+        const winIndex = this.stats.lastGames.findIndex(game => game === 'win');
+        if (winIndex !== -1) {
+          this.stats.lastGames.splice(winIndex, 1);
+        }
       }
     } else if (type === 'losses') {
       if (action === 'increase') {
         this.stats.losses++;
         this.stats.lossesAdjustment++;
+        // Add a loss to the last games
+        this.stats.lastGames.unshift('loss');
+        if (this.stats.lastGames.length > 10) {
+          this.stats.lastGames.pop();
+        }
+        gameAdded = true;
       } else if (action === 'decrease' && this.stats.losses > 0) {
         this.stats.losses--;
         this.stats.lossesAdjustment--;
+        // Remove the most recent loss from last games
+        const lossIndex = this.stats.lastGames.findIndex(game => game === 'loss');
+        if (lossIndex !== -1) {
+          this.stats.lastGames.splice(lossIndex, 1);
+        }
       }
     } else if (type === 'draws') {
       if (action === 'increase') {
         this.stats.draws++;
         this.stats.drawsAdjustment++;
+        // Add a draw to the last games
+        this.stats.lastGames.unshift('draw');
+        if (this.stats.lastGames.length > 10) {
+          this.stats.lastGames.pop();
+        }
+        gameAdded = true;
       } else if (action === 'decrease' && this.stats.draws > 0) {
         this.stats.draws--;
         this.stats.drawsAdjustment--;
+        // Remove the most recent draw from last games
+        const drawIndex = this.stats.lastGames.findIndex(game => game === 'draw');
+        if (drawIndex !== -1) {
+          this.stats.lastGames.splice(drawIndex, 1);
+        }
       }
+    }
+    
+    // Recalculate streak if a game was added
+    if (gameAdded || action === 'decrease') {
+      this.recalculateStreak();
     }
     
     // Recalculate score
@@ -2235,6 +2279,70 @@ class ChessWidget {
       eloChangeValueEl.textContent = `${ratingChange}`;
     }
   }
+
+  recalculateStreak() {
+    // Recalculate streak from the most recent games
+    if (this.stats.lastGames.length === 0) {
+      this.stats.currentStreak = 0;
+      this.stats.streakType = 'win';
+      return;
+    }
+    
+    const mostRecentGame = this.stats.lastGames[0];
+    let streakCount = 0;
+    let streakType = mostRecentGame;
+    
+    // Count consecutive games of the same type from the beginning
+    for (const game of this.stats.lastGames) {
+      if (game === streakType) {
+        streakCount++;
+      } else {
+        break;
+      }
+    }
+    
+    // Handle draws (they break streaks)
+    if (mostRecentGame === 'draw') {
+      this.stats.currentStreak = 0;
+      this.stats.streakType = 'win'; // Default to win for next potential streak
+    } else {
+      this.stats.currentStreak = streakCount;
+      this.stats.streakType = streakType;
+    }
+  }
+
+  resetStats() {
+    // Confirm before resetting
+    if (confirm('Are you sure you want to reset all stats to 0? This cannot be undone.')) {
+      // Reset all stats to 0
+      this.stats.wins = 0;
+      this.stats.losses = 0;
+      this.stats.draws = 0;
+      this.stats.score = 0;
+      this.stats.totalGames = 0;
+      this.stats.currentStreak = 0;
+      this.stats.streakType = 'win';
+      this.stats.lastGames = [];
+      
+      // Reset adjustments
+      this.stats.winsAdjustment = 0;
+      this.stats.lossesAdjustment = 0;
+      this.stats.drawsAdjustment = 0;
+      
+      // Clear stored adjustments
+      localStorage.removeItem('chess-widget-adjustments');
+      
+      // Reset initial rating for elo tracking
+      this.initialRating = this.stats.rating;
+      
+      // Update UI
+      this.updateUI();
+      
+      console.log('Stats reset to 0');
+    }
+  }
+
+  // ...existing code...
 }
 
 // Add debug function to window for testing
