@@ -19,6 +19,9 @@ class ChessWidget {
     this.nextRefreshTime = 0;
     this.isPaused = false; // For manual pause control
     this.initialRating = null; // Track starting rating for session
+    this.twitchClient = null; // Twitch chat client
+    this.twitchConnected = false;
+    this.lastCommandTime = {}; // Rate limiting for commands
     this.stats = {
       rating: 0,
       wins: 0,
@@ -51,14 +54,13 @@ class ChessWidget {
     this.loadStoredConfig();
     this.loadAdjustments();
     this.loadSponsorSettings();
-  }
-
-  bindEvents() {
+  }  bindEvents() {
     const startBtn = document.getElementById('start-tracking');
     const settingsIcon = document.getElementById('settings-icon');
     const showSponsorCheckbox = document.getElementById('show-sponsor');
     const pauseBtn = document.getElementById('pause-refresh-btn');
     const resetBtn = document.getElementById('reset-stats-btn');
+    const enableTwitchCheckbox = document.getElementById('enable-twitch');
 
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startTracking());
@@ -77,10 +79,15 @@ class ChessWidget {
     if (resetBtn) {
       resetBtn.addEventListener('click', () => this.resetStats());
     }
-
+    if (enableTwitchCheckbox) {
+      enableTwitchCheckbox.addEventListener('change', (e) => {
+        this.toggleTwitchChat(e.target.checked);
+      });
+    }
+    
     // Add event listeners for adjustment buttons
     this.bindAdjustmentButtons();
-
+    
     // Add event listeners for sponsor functionality
     this.bindSponsorEvents();
   }
@@ -1085,7 +1092,7 @@ class ChessWidget {
       } else if (result === 'draw') {
         gameDiv.textContent = '';
       } else {
-        gameDiv.textContent = '?';
+        gameDiv.textContent = '';
         gameDiv.style.background = '#333';
       }
 
@@ -2338,6 +2345,233 @@ class ChessWidget {
     this.updateUI();
 
     console.log('Stats reset to 0');
+  }
+
+  // Twitch Chat Integration
+  toggleTwitchChat(enabled) {
+    const twitchConfig = document.getElementById('twitch-config');
+    
+    if (enabled) {
+      twitchConfig.style.display = 'block';
+      // Auto-connect if channel is already set
+      const channelInput = document.getElementById('twitch-channel');
+      if (channelInput && channelInput.value.trim()) {
+        this.connectToTwitchChat(channelInput.value.trim());
+      }
+      
+      // Add listener for channel input changes
+      if (channelInput) {
+        channelInput.addEventListener('change', (e) => {
+          const channel = e.target.value.trim();
+          if (channel) {
+            this.connectToTwitchChat(channel);
+          } else {
+            this.disconnectFromTwitchChat();
+          }
+        });
+      }
+    } else {
+      twitchConfig.style.display = 'none';
+      this.disconnectFromTwitchChat();
+    }
+  }
+
+  connectToTwitchChat(channel) {
+    if (this.twitchConnected) {
+      this.disconnectFromTwitchChat();
+    }
+
+    this.updateTwitchStatus('connecting', 'Connecting...');
+    
+    try {
+      // Using Twitch IRC WebSocket
+      this.twitchClient = new WebSocket('wss://irc-ws.chat.twitch.tv:443');
+      
+      this.twitchClient.onopen = () => {
+        // Anonymous connection to Twitch IRC
+        this.twitchClient.send('PASS SCHMOOPIIE\r\n');
+        this.twitchClient.send('NICK justinfan12345\r\n');
+        this.twitchClient.send(`JOIN #${channel.toLowerCase()}\r\n`);
+        this.twitchClient.send('CAP REQ :twitch.tv/tags\r\n'); // Request user tags for mod detection
+      };
+
+      this.twitchClient.onmessage = (event) => {
+        this.handleTwitchMessage(event.data);
+      };
+
+      this.twitchClient.onclose = () => {
+        this.twitchConnected = false;
+        this.updateTwitchStatus('disconnected', 'Disconnected');
+      };
+
+      this.twitchClient.onerror = (error) => {
+        console.error('Twitch connection error:', error);
+        this.updateTwitchStatus('disconnected', 'Connection failed');
+      };
+
+    } catch (error) {
+      console.error('Failed to connect to Twitch:', error);
+      this.updateTwitchStatus('disconnected', 'Connection failed');
+    }
+  }
+
+  disconnectFromTwitchChat() {
+    if (this.twitchClient) {
+      this.twitchClient.close();
+      this.twitchClient = null;
+    }
+    this.twitchConnected = false;
+    this.updateTwitchStatus('disconnected', 'Disconnected');
+  }
+
+  updateTwitchStatus(status, message) {
+    const statusEl = document.getElementById('twitch-status');
+    if (statusEl) {
+      statusEl.textContent = message;
+      statusEl.className = `twitch-status ${status}`;
+      
+      if (status === 'connected') {
+        this.twitchConnected = true;
+      }
+    }
+  }
+
+  handleTwitchMessage(rawMessage) {
+    const lines = rawMessage.split('\r\n');
+    
+    for (const line of lines) {
+      if (line.trim() === '') continue;
+      
+      // Handle PING/PONG to keep connection alive
+      if (line.startsWith('PING')) {
+        this.twitchClient.send('PONG :tmi.twitch.tv\r\n');
+        continue;
+      }
+      
+      // Handle successful connection
+      if (line.includes('Welcome, GLHF!')) {
+        this.updateTwitchStatus('connected', 'Connected');
+        continue;
+      }
+      
+      // Parse chat messages
+      if (line.includes('PRIVMSG')) {
+        this.parseTwitchChatMessage(line);
+      }
+    }
+  }
+
+  parseTwitchChatMessage(message) {
+    try {
+      // Extract tags and message content
+      const parts = message.split(' ');
+      const tags = {};
+      
+      console.log(message);
+      // Parse IRC tags
+      if (message.startsWith('@')) {
+        const tagString = message.split(' ')[0].substring(1);
+        const tagPairs = tagString.split(';');
+        
+        for (const pair of tagPairs) {
+          const [key, value] = pair.split('=');
+          tags[key] = value || '';
+        }
+      }
+      
+      // Extract username and message content
+      const userMatch = message.match(/:(\w+)!\w+@\w+\.tmi\.twitch\.tv/);
+      const messageMatch = message.match(/PRIVMSG #\w+ :(.+)/);
+      
+      if (userMatch && messageMatch) {
+        const username = userMatch[1];
+        const messageContent = messageMatch[1];
+        
+        // Check if user is a moderator or broadcaster
+        const isModerator = tags.mod === '1' || tags.badges?.includes('broadcaster') || tags.badges?.includes('moderator');
+        
+        if (isModerator) {
+          this.handleModeratorCommand(username, messageContent);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing Twitch message:', error);
+    }
+  }
+
+  handleModeratorCommand(username, message) {
+    const command = message.trim().toLowerCase();
+    
+    // Rate limiting - only allow one command per user per 5 seconds
+    const now = Date.now();
+    const lastCommandTime = this.lastCommandTime[username] || 0;
+    
+    if (now - lastCommandTime < 5000) {
+      console.log(`Rate limiting command from ${username}`);
+      return;
+    }
+    
+    // Execute commands
+    switch (command) {
+      case '!win':
+        this.adjustStat('wins', 'increase');
+        this.lastCommandTime[username] = now;
+        console.log(`${username} added a win via Twitch chat`);
+        break;
+        
+      case '!loss':
+        this.adjustStat('losses', 'increase');
+        this.lastCommandTime[username] = now;
+        console.log(`${username} added a loss via Twitch chat`);
+        break;
+        
+      case '!draw':
+        this.adjustStat('draws', 'increase');
+        this.lastCommandTime[username] = now;
+        console.log(`${username} added a draw via Twitch chat`);
+        break;
+        
+      case '!reset':
+        // Extra protection for reset - require confirmation or multiple mods
+        this.handleResetCommand(username);
+        break;
+        
+      default:
+        // Ignore non-commands
+        break;
+    }
+  }
+
+  handleResetCommand(username) {
+    // For now, allow reset but log it prominently
+    console.log(`⚠️ RESET COMMAND from moderator ${username}`);
+    
+    // Reset without confirmation dialog for mods
+    this.stats.wins = 0;
+    this.stats.losses = 0;
+    this.stats.draws = 0;
+    this.stats.score = 0;
+    this.stats.totalGames = 0;
+    this.stats.currentStreak = 0;
+    this.stats.streakType = 'win';
+    this.stats.lastGames = [];
+    
+    // Reset adjustments
+    this.stats.winsAdjustment = 0;
+    this.stats.lossesAdjustment = 0;
+    this.stats.drawsAdjustment = 0;
+    
+    // Clear stored adjustments
+    localStorage.removeItem('chess-widget-adjustments');
+    
+    // Reset initial rating for elo tracking
+    this.initialRating = this.stats.rating;
+    
+    // Update UI
+    this.updateUI();
+    
+    this.lastCommandTime[username] = Date.now();
+    console.log(`Stats reset by moderator ${username}`);
   }
 
 }
