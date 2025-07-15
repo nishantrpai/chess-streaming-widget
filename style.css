@@ -281,7 +281,7 @@ body {
 .adjust-btn {
   width: 24px;
   height: 24px;
-  background: var(--muted);
+  background: var(--accent-foreground);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   cursor: pointer;
@@ -768,14 +768,63 @@ body {
   margin-top: var(--spacing-sm);
 }
 
+.twitch-connection-controls {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xs);
+}
+
 .twitch-config input {
-  width: 100%;
+  flex: 1;
   padding: var(--spacing-xs);
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--foreground);
   font-size: 11px;
+}
+
+.twitch-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.twitch-btn:hover {
+  background: var(--muted);
+}
+
+.twitch-btn.connect {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.twitch-btn.connect:hover {
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.twitch-btn.disconnect {
+  border-color: var(--destructive);
+  color: var(--destructive);
+}
+
+.twitch-btn.disconnect:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.twitch-btn i {
+  width: 12px;
+  height: 12px;
 }
 
 .twitch-status {

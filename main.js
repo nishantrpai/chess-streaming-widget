@@ -61,6 +61,8 @@ class ChessWidget {
     const pauseBtn = document.getElementById('pause-refresh-btn');
     const resetBtn = document.getElementById('reset-stats-btn');
     const enableTwitchCheckbox = document.getElementById('enable-twitch');
+    const twitchConnectBtn = document.getElementById('twitch-connect-btn');
+    const twitchDisconnectBtn = document.getElementById('twitch-disconnect-btn');
 
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startTracking());
@@ -83,6 +85,12 @@ class ChessWidget {
       enableTwitchCheckbox.addEventListener('change', (e) => {
         this.toggleTwitchChat(e.target.checked);
       });
+    }
+    if (twitchConnectBtn) {
+      twitchConnectBtn.addEventListener('click', () => this.handleTwitchConnect());
+    }
+    if (twitchDisconnectBtn) {
+      twitchDisconnectBtn.addEventListener('click', () => this.handleTwitchDisconnect());
     }
     
     // Add event listeners for adjustment buttons
@@ -2353,27 +2361,21 @@ class ChessWidget {
     
     if (enabled) {
       twitchConfig.style.display = 'block';
-      // Auto-connect if channel is already set
-      const channelInput = document.getElementById('twitch-channel');
-      if (channelInput && channelInput.value.trim()) {
-        this.connectToTwitchChat(channelInput.value.trim());
-      }
-      
-      // Add listener for channel input changes
-      if (channelInput) {
-        channelInput.addEventListener('change', (e) => {
-          const channel = e.target.value.trim();
-          if (channel) {
-            this.connectToTwitchChat(channel);
-          } else {
-            this.disconnectFromTwitchChat();
-          }
-        });
-      }
     } else {
       twitchConfig.style.display = 'none';
       this.disconnectFromTwitchChat();
     }
+  }
+
+  handleTwitchConnect() {
+    const channelInput = document.getElementById('twitch-channel');
+    if (channelInput && channelInput.value.trim()) {
+      this.connectToTwitchChat(channelInput.value.trim());
+    }
+  }
+
+  handleTwitchDisconnect() {
+    this.disconnectFromTwitchChat();
   }
 
   connectToTwitchChat(channel) {
@@ -2426,12 +2428,23 @@ class ChessWidget {
 
   updateTwitchStatus(status, message) {
     const statusEl = document.getElementById('twitch-status');
+    const connectBtn = document.getElementById('twitch-connect-btn');
+    const disconnectBtn = document.getElementById('twitch-disconnect-btn');
+    
     if (statusEl) {
       statusEl.textContent = message;
       statusEl.className = `twitch-status ${status}`;
       
       if (status === 'connected') {
         this.twitchConnected = true;
+        // Show disconnect button, hide connect button
+        if (connectBtn) connectBtn.style.display = 'none';
+        if (disconnectBtn) disconnectBtn.style.display = 'flex';
+      } else {
+        this.twitchConnected = false;
+        // Show connect button, hide disconnect button
+        if (connectBtn) connectBtn.style.display = 'flex';
+        if (disconnectBtn) disconnectBtn.style.display = 'none';
       }
     }
   }

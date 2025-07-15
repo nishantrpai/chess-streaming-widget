@@ -175,7 +175,15 @@
                 </label>
               </div>
               <div class="twitch-config" id="twitch-config" style="display: none;">
-                <input type="text" id="twitch-channel" placeholder="Twitch channel name" style="margin-bottom: 4px;">
+                <div class="twitch-connection-controls">
+                  <input type="text" id="twitch-channel" placeholder="Twitch channel name">
+                  <button id="twitch-connect-btn" class="twitch-btn connect">
+                    Connect
+                  </button>
+                  <button id="twitch-disconnect-btn" class="twitch-btn disconnect" style="display: none;">
+                    Disconnect
+                  </button>
+                </div>
                 <div class="twitch-status" id="twitch-status">Disconnected</div>
                 <div class="twitch-commands">
                   Commands: !win, !loss, !draw, !reset (mods only)
