@@ -1,178 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/chess-icon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2b2b2b" />
-    <meta name="description" content="Chess streaming widget for Lichess and Chess.com" />
-    <!-- Prevent caching during development -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <link rel="manifest" href="/manifest.json" />
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-    <title>Chess Streaming Widget</title>
-  </head>
-  <body>
-    <div id="app">
-      <!-- Screen 1: Configuration -->
-      <div id="config-screen" class="screen active">
-        <div class="config-container">
-          <h2>Chess Streaming Widget</h2>
-          <h3>
-            Display your chess stats live on stream!
-          </h3>
-          <div class="form-group">
-            <label for="platform">Platform</label>
-            <select id="platform">
-              <option value="chess.com">Chess.com</option>
-              <option value="lichess">Lichess</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="username">Username</label>
-            <input type="text" id="username" placeholder="Enter your username" />
-          </div>
-          <div class="form-group">
-            <label for="rating-type">Rating Type</label>
-            <select id="rating-type">
-              <option value="best">Best Available</option>
-              <option value="classical">Classical</option>
-              <option value="rapid">Rapid</option>
-              <option value="blitz">Blitz</option>
-              <option value="bullet">Bullet (Chess.com only)</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="show-sponsor">
-              <input type="checkbox" id="show-sponsor" style="margin-right: 8px;">
-              Show sponsor section
-            </label>
-          </div>
-          
-          <!-- Sponsor Upload Section -->
-          <div class="sponsor-config" id="sponsor-config" style="display: none;">
-            <div class="form-group">
-              <label>Sponsor Image</label>
-              <div class="sponsor-upload" id="sponsor-upload-config">
-                <div class="sponsor-upload-icon"><i data-lucide="image"></i></div>
-                <div>Click to upload sponsor image</div>
-                <input type="file" id="sponsor-file-config" accept="image/*">
-              </div>
-              <div id="sponsor-preview" style="display: none; margin-top: 8px;">
-                <img id="sponsor-preview-image" style="width: 100%; height: 60px; object-fit: cover; border-radius: 4px;" alt="Sponsor Preview">
-                <button type="button" id="remove-sponsor-config" style="margin-top: 4px; padding: 4px 8px; font-size: 10px; background: var(--destructive); color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
-              </div>
-            </div>
-          </div>
-          
-          <button id="start-tracking" class="primary-btn">Start Tracking</button>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/chess-icon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#2b2b2b" />
+  <meta name="description" content="Chess streaming widget for Lichess and Chess.com" />
+  <!-- Prevent caching during development -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <link rel="manifest" href="/manifest.json" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <title>Chess Streaming Widget</title>
+</head>
+
+<body>
+  <div id="app">
+    <!-- Screen 1: Configuration -->
+    <div id="config-screen" class="screen active">
+      <div class="config-container">
+        <h2>Chess Streaming Widget</h2>
+        <h3>
+          Display your chess stats live on stream!
+        </h3>
+        <div class="form-group">
+          <label for="platform">Platform</label>
+          <select id="platform">
+            <option value="chess.com">Chess.com</option>
+            <option value="lichess">Lichess</option>
+          </select>
         </div>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Enter your username" />
+        </div>
+        <div class="form-group">
+          <label for="rating-type">Rating Type</label>
+          <select id="rating-type">
+            <option value="best">Best Available</option>
+            <option value="classical">Classical</option>
+            <option value="rapid">Rapid</option>
+            <option value="blitz">Blitz</option>
+            <option value="bullet">Bullet (Chess.com only)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="show-sponsor">
+            <input type="checkbox" id="show-sponsor" style="margin-right: 8px;">
+            Show sponsor section
+          </label>
+        </div>
+
+        <!-- Sponsor Upload Section -->
+        <div class="sponsor-config" id="sponsor-config" style="display: none;">
+          <div class="form-group">
+            <label>Sponsor Image</label>
+            <div class="sponsor-upload" id="sponsor-upload-config">
+              <div class="sponsor-upload-icon"><i data-lucide="image"></i></div>
+              <div>Click to upload sponsor image</div>
+              <input type="file" id="sponsor-file-config" accept="image/*">
+            </div>
+            <div id="sponsor-preview" style="display: none; margin-top: 8px;">
+              <img id="sponsor-preview-image" style="width: 100%; height: 60px; object-fit: cover; border-radius: 4px;"
+                alt="Sponsor Preview">
+              <button type="button" id="remove-sponsor-config"
+                style="margin-top: 4px; padding: 4px 8px; font-size: 10px; background: var(--destructive); color: white; border: none; border-radius: 4px; cursor: pointer;">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <button id="start-tracking" class="primary-btn">Start Tracking</button>
       </div>
+    </div>
 
-      <!-- Screen 2: Stats Display -->
-      <div id="stats-screen" class="screen">
-        <div class="stats-container">
-          <!-- Settings Icon -->
-          <div class="settings-icon" id="settings-icon" title="Settings">
-            <i data-lucide="settings"></i>
-          </div>
-          
-          <div class="money-spent">
-            <div class="label" id="rating-label">RATING</div>
-            <div class="value" id="rating">Loading...</div>
-            <div class="tournament-info" id="tournament-info" style="display: none;">
-              <div class="tournament-name" id="tournament-name"></div>
-              <div class="tournament-details">
-                <div class="tournament-position">
-                  <span class="tournament-rank" id="tournament-rank">-</span>
-                  <span class="tournament-total" id="tournament-total">/ -</span>
-                </div>
-                <div class="tournament-points" id="tournament-points">- pts</div>
-              </div>
-              <div class="tournament-status" id="tournament-status"></div>
-            </div>
-          </div>
-          
-          <div class="win-loss-container">
-            <div class="stat-card wins">
-              <div class="icon"><i data-lucide="trophy"></i></div>
-              <div class="label">WINS</div>
-              <div class="value-container">
-                <button class="adjust-btn minus" data-type="wins" data-action="decrease">
-                  <i data-lucide="minus"></i>
-                </button>
-                <div class="value" id="wins">0</div>
-                <button class="adjust-btn plus" data-type="wins" data-action="increase">
-                  <i data-lucide="plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="stat-card losses">
-              <div class="icon"><i data-lucide="heart-crack"></i></div>
-              <div class="label">LOSSES</div>
-              <div class="value-container">
-                <button class="adjust-btn minus" data-type="losses" data-action="decrease">
-                  <i data-lucide="minus"></i>
-                </button>
-                <div class="value" id="losses">0</div>
-                <button class="adjust-btn plus" data-type="losses" data-action="increase">
-                  <i data-lucide="plus"></i>
-                </button>
-              </div>
-            </div>
-            <div class="stat-card draws">
-              <div class="icon"><i data-lucide="equal"></i></div>
-              <div class="label">DRAWS</div>
-              <div class="value-container">
-                <button class="adjust-btn minus" data-type="draws" data-action="decrease">
-                  <i data-lucide="minus"></i>
-                </button>
-                <div class="value" id="draws">0</div>
-                <button class="adjust-btn plus" data-type="draws" data-action="increase">
-                  <i data-lucide="plus"></i>
-                </button>
-              </div>
-            </div>
-          </div>
+    <!-- Screen 2: Stats Display -->
+    <div id="stats-screen" class="screen">
+      <div class="stats-container">
 
-          <div class="win-rate">
-            <div class="label">WIN RATE</div>
-            <div class="win-rate-main">
-              <div class="percentage" id="win-percentage">0%</div>
-              <div class="record">
-                <div class="record-wins" id="record-wins">0W</div>
-                <div class="record-losses" id="record-losses">0L</div>
-                <div class="record-draws" id="record-draws">0D</div>
+        <div class="money-spent">
+          <div class="label" id="rating-label">RATING</div>
+          <div class="value" id="rating">Loading...</div>
+          <div class="elo-change" id="elo-change" style="display: none;">
+            <span id="elo-change-value"></span>
+          </div>
+          <div class="tournament-info" id="tournament-info" style="display: none;">
+            <div class="tournament-name" id="tournament-name"></div>
+            <div class="tournament-details">
+              <div class="tournament-position">
+                <span class="tournament-rank" id="tournament-rank">-</span>
+                <span class="tournament-total" id="tournament-total">/ -</span>
               </div>
+              <div class="tournament-points" id="tournament-points">- pts</div>
+            </div>
+            <div class="tournament-status" id="tournament-status"></div>
+          </div>
+        </div>
+
+        <div class="win-loss-container">
+          <div class="stat-card wins">
+            <div class="icon"><i data-lucide="trophy"></i></div>
+            <div class="label">WINS</div>
+            <div class="value" id="wins">0</div>
+          </div>
+          <div class="stat-card losses">
+            <div class="icon"><i data-lucide="heart-crack"></i></div>
+            <div class="label">LOSSES</div>
+            <div class="value" id="losses">0</div>
+          </div>
+          <div class="stat-card draws">
+            <div class="icon"><i data-lucide="equal"></i></div>
+            <div class="label">DRAWS</div>
+            <div class="value" id="draws">0</div>
+          </div>
+        </div>
+
+        <div class="win-rate">
+          <div class="label">SCORE</div>
+          <div class="win-rate-main">
+            <div class="percentage" id="win-percentage">0/0</div>
+            <div class="record">
+              <div class="record-wins" id="record-wins">0W</div>
+              <div class="record-losses" id="record-losses">0L</div>
+              <div class="record-draws" id="record-draws">0D</div>
             </div>
           </div>
+        </div>
 
-          <div class="last-games">
-            <div class="games-header">
-              <span class="label">LAST 10 GAMES</span>
-              <span class="streak" id="streak">0 WIN STREAK</span>
-            </div>
-            <div class="games-grid" id="games-grid">
-              <!-- Games will be populated here -->
-            </div>
+        <div class="last-games">
+          <div class="games-header">
+            <span class="label">LAST 10 GAMES</span>
+            <span class="streak" id="streak">0 WIN STREAK</span>
+          </div>
+          <div class="games-grid" id="games-grid">
+            <!-- Games will be populated here -->
+          </div>
+        </div>
+
+        <!-- Sponsor Section -->
+        <div class="sponsor-section" id="sponsor-section" style="display: none;">
+          <img id="sponsor-image" class="sponsor-image" alt="Sponsor">
+        </div>
+
+        <div class="last-updated">
+          <i data-lucide="refresh-cw" class="update-icon"></i>
+          <span id="last-updated">0s</span>
+          <span id="next-refresh" style="margin-left: 8px; color: #888;"></span>
+        </div>
+
+        <!-- Control Buttons moved to bottom -->
+        <div class="control-buttons-container">
+          <div class="control-buttons">
+            <button class="control-btn" id="pause-refresh-btn" title="Pause/Resume Auto-refresh">
+              <i data-lucide="pause"></i>
+            </button>
+            <button class="control-btn" id="settings-icon" title="Settings">
+              <i data-lucide="settings"></i>
+            </button>
           </div>
 
-          <!-- Sponsor Section -->
-          <div class="sponsor-section" id="sponsor-section" style="display: none;">
-            <img id="sponsor-image" class="sponsor-image" alt="Sponsor">
-          </div>
-          
-          <div class="last-updated">
-            <i data-lucide="refresh-cw" class="update-icon"></i>
-            <span id="last-updated">0s</span>
-            <span id="next-refresh" style="margin-left: 8px; color: #888;"></span>
+          <!-- Manual Adjustment Controls (hidden from viewers) -->
+          <div class="adjustment-controls">
+            <div class="adjust-group">
+              <span class="adjust-label">W:</span>
+              <button class="adjust-btn" data-type="wins" data-action="decrease" title="Decrease Wins">
+                <i data-lucide="minus"></i>
+              </button>
+              <button class="adjust-btn" data-type="wins" data-action="increase" title="Increase Wins">
+                <i data-lucide="plus"></i>
+              </button>
+            </div>
+            <div class="adjust-group">
+              <span class="adjust-label">L:</span>
+              <button class="adjust-btn" data-type="losses" data-action="decrease" title="Decrease Losses">
+                <i data-lucide="minus"></i>
+              </button>
+              <button class="adjust-btn" data-type="losses" data-action="increase" title="Increase Losses">
+                <i data-lucide="plus"></i>
+              </button>
+            </div>
+            <div class="adjust-group">
+              <span class="adjust-label">D:</span>
+              <button class="adjust-btn" data-type="draws" data-action="decrease" title="Decrease Draws">
+                <i data-lucide="minus"></i>
+              </button>
+              <button class="adjust-btn" data-type="draws" data-action="increase" title="Increase Draws">
+                <i data-lucide="plus"></i>
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    <script type="module" src="/main.js"></script>
-  </body>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+
 </html>

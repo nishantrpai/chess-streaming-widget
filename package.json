@@ -12,6 +12,7 @@
     "vite": "^4.4.0"
   },
   "dependencies": {
-    "chess-web-api": "^1.2.0"
+    "chess-web-api": "^1.2.0",
+    "lichess": "^2.0.15"
   }
 }

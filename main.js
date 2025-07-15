@@ -17,12 +17,15 @@ class ChessWidget {
     this.refreshInterval = null; // For auto-refresh
     this.refreshCountdownInterval = null; // For countdown display
     this.nextRefreshTime = 0;
+    this.isPaused = false; // For manual pause control
+    this.initialRating = null; // Track starting rating for session
     this.stats = {
       rating: 0,
       wins: 0,
       losses: 0,
       draws: 0,
-      winRate: 0,
+      score: 0,
+      totalGames: 0,
       lastGames: [],
       currentStreak: 0,
       streakType: 'win',
@@ -54,6 +57,7 @@ class ChessWidget {
     const startBtn = document.getElementById('start-tracking');
     const settingsIcon = document.getElementById('settings-icon');
     const showSponsorCheckbox = document.getElementById('show-sponsor');
+    const pauseBtn = document.getElementById('pause-refresh-btn');
 
     if (startBtn) {
       startBtn.addEventListener('click', () => this.startTracking());
@@ -65,6 +69,9 @@ class ChessWidget {
       showSponsorCheckbox.addEventListener('change', (e) => {
         this.toggleSponsorConfig(e.target.checked);
       });
+    }
+    if (pauseBtn) {
+      pauseBtn.addEventListener('click', () => this.togglePause());
     }
     
     // Add event listeners for adjustment buttons
@@ -119,9 +126,10 @@ class ChessWidget {
       }
     }
     
-    // Recalculate win rate
+    // Recalculate score
     const totalGames = this.stats.wins + this.stats.losses + this.stats.draws;
-    this.stats.winRate = totalGames > 0 ? Math.round((this.stats.wins / totalGames) * 100) : 0;
+    this.stats.score = totalGames > 0 ? this.stats.wins + (this.stats.draws * 0.5) : 0;
+    this.stats.totalGames = totalGames;
     
     // Update UI
     this.updateUI();
@@ -260,8 +268,17 @@ class ChessWidget {
     document.getElementById('config-screen').classList.add('active');
   }
 
-  async refreshStats() {
-    this.setLoadingState(true);
+  async refreshStats(isBackgroundRefresh = false) {
+    // Only show loading state for manual refreshes, not background auto-refreshes
+    if (!isBackgroundRefresh) {
+      this.setLoadingState(true);
+    } else {
+      // For background refreshes, show subtle indicator in countdown
+      const nextRefreshEl = document.getElementById('next-refresh');
+      if (nextRefreshEl) {
+        nextRefreshEl.textContent = '(updating...)';
+      }
+    }
     
     try {
       if (this.currentPlatform === 'lichess') {
@@ -272,21 +289,23 @@ class ChessWidget {
       
       this.updateUI();
       
-      // Set up auto-refresh if player is in a tournament
-      if (this.stats.isInTournament) {
-        this.startAutoRefresh();
-      } else {
-        this.stopAutoRefresh();
-      }
+      // Always start auto-refresh for real-time updates (both tournament and regular play)
+      this.startAutoRefresh();
       
       // Update last updated time
       this.stats.lastUpdated = new Date();
       
     } catch (error) {
       console.error('Error fetching stats:', error);
-      this.showStatsError('Failed to fetch stats. Please check your username and try again.');
+      if (!isBackgroundRefresh) {
+        this.showStatsError('Failed to fetch stats. Please check your username and try again.');
+      }
+      // For background refreshes, silently fail and try again on next cycle
     } finally {
-      this.setLoadingState(false);
+      // Only remove loading state if we showed it
+      if (!isBackgroundRefresh) {
+        this.setLoadingState(false);
+      }
     }
   }
 
@@ -294,13 +313,16 @@ class ChessWidget {
     // Clear existing interval
     this.stopAutoRefresh();
     
-    // Refresh every 5 seconds for real-time tournament updates
+    // Refresh every 10 seconds for real-time updates
     this.refreshInterval = setInterval(() => {
-      this.refreshStats();
-    }, 5000);
+      // Respect pause state - only refresh if not paused
+      if (!this.isPaused) {
+        this.refreshStats(true); // true = background refresh, no loading state
+      }
+    }, 10000);
     
     // Set next refresh time
-    this.nextRefreshTime = Date.now() + 5000;
+    this.nextRefreshTime = Date.now() + 10000;
     this.startRefreshCountdown();
   }
 
@@ -323,17 +345,24 @@ class ChessWidget {
     
     // Update countdown every second
     this.refreshCountdownInterval = setInterval(() => {
+      const nextRefreshEl = document.getElementById('next-refresh');
+      
+      // Check if paused
+      if (this.isPaused) {
+        if (nextRefreshEl) nextRefreshEl.textContent = '(paused)';
+        return;
+      }
+      
       const now = Date.now();
       const timeLeft = Math.max(0, Math.ceil((this.nextRefreshTime - now) / 1000));
       
-      const nextRefreshEl = document.getElementById('next-refresh');
       if (nextRefreshEl) {
         if (timeLeft > 0) {
           nextRefreshEl.textContent = `(next refresh in ${timeLeft}s)`;
         } else {
           nextRefreshEl.textContent = '';
           // Update next refresh time
-          this.nextRefreshTime = Date.now() + 5000;
+          this.nextRefreshTime = Date.now() + 10000;
         }
       }
     }, 1000);
@@ -358,86 +387,328 @@ class ChessWidget {
   }
 
   async fetchLichessStats() {
-    // First, check if user is currently playing in any tournaments
-    const currentTournaments = await this.fetchCurrentLichessTournaments();
+    console.log('Fetching Lichess stats for:', this.currentUsername);
     
-    let tournamentInfo = null;
-    let rating = 1500;
-    
-    if (currentTournaments && currentTournaments.length > 0) {
-      // Player is in tournament(s), use the most recent one
-      tournamentInfo = currentTournaments[0];
-      this.stats.isInTournament = true;
-      this.stats.tournamentName = tournamentInfo.fullName || 'Lichess Tournament';
-      this.stats.tournamentType = tournamentInfo.perf || 'blitz';
-      this.stats.tournamentTotalPlayers = tournamentInfo.nbPlayers;
-      this.stats.tournamentStatus = this.getLichessTournamentStatus(tournamentInfo);
+    try {
+      // First, get user profile for basic data and rating
+      const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
+      if (!profileResponse.ok) {
+        throw new Error('User not found');
+      }
+      const userProfile = await profileResponse.json();
+      console.log('Lichess profile fetched:', userProfile);
+
+      // Check for current tournaments with improved detection
+      const currentTournaments = await this.fetchCurrentLichessTournamentsImproved();
       
-      // Get user's position in tournament
-      try {
-        const standings = await this.fetchLichessTournamentStandings(tournamentInfo.id);
-        const playerEntry = standings.players?.find(p => 
-          p.name.toLowerCase() === this.currentUsername.toLowerCase()
-        );
+      let rating = 1500;
+      let games = [];
+      
+      if (currentTournaments && currentTournaments.length > 0) {
+        // Player is in tournament(s) - use the most recent/active one
+        const tournament = currentTournaments[0];
+        this.stats.isInTournament = true;
+        this.stats.tournamentName = tournament.fullName || tournament.name || 'Lichess Tournament';
+        this.stats.tournamentType = tournament.perf || 'blitz';
+        this.stats.tournamentTotalPlayers = tournament.nbPlayers;
+        this.stats.tournamentStatus = this.getLichessTournamentStatus(tournament);
         
-        if (playerEntry) {
-          this.stats.tournamentPosition = playerEntry.rank;
-          this.stats.tournamentPoints = playerEntry.score;
+        // Get rating based on tournament type
+        rating = this.getLichessRatingByType(userProfile, this.stats.tournamentType);
+        
+        // Get tournament standings for position and points
+        try {
+          const standings = await this.fetchLichessTournamentStandings(tournament.id);
+          const playerEntry = standings.players?.find(p => 
+            p.name.toLowerCase() === this.currentUsername.toLowerCase()
+          );
+          
+          if (playerEntry) {
+            this.stats.tournamentPosition = playerEntry.rank;
+            this.stats.tournamentPoints = playerEntry.score;
+          }
+        } catch (standingsError) {
+          console.log('Could not fetch tournament standings:', standingsError);
         }
-      } catch (standingsError) {
-        console.log('Could not fetch tournament standings:', standingsError);
+        
+        // Get tournament games with improved filtering
+        try {
+          const tournamentGames = await this.fetchLichessTournamentGamesImproved(tournament);
+          if (tournamentGames && tournamentGames.length > 0) {
+            console.log('Found', tournamentGames.length, 'tournament games');
+            this.processGames(tournamentGames, 'lichess', rating);
+            return;
+          }
+        } catch (tournamentGamesError) {
+          console.log('Could not fetch tournament games:', tournamentGamesError);
+        }
+      } else {
+        // Not in tournament, fetch regular stats
+        this.stats.isInTournament = false;
+        this.stats.tournamentName = '';
+        this.stats.tournamentType = '';
+        
+        // Get rating based on user's rating type preference
+        rating = this.getLichessRatingByType(userProfile, this.currentRatingType);
       }
       
-      // Fetch tournament games
-      try {
-        const tournamentGames = await this.fetchLichessTournamentGames(tournamentInfo.id);
-        if (tournamentGames && tournamentGames.length > 0) {
-          // Get rating from tournament performance or user profile
-          const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
-          const profile = profileResponse.ok ? await profileResponse.json() : {};
-          rating = this.getRatingByTournamentType(profile, this.stats.tournamentType);
-          
-          this.processGames(tournamentGames, 'lichess', rating);
-          return;
+      // Fallback: Get recent games with improved accuracy
+      const recentGames = await this.fetchLichessRecentGamesImproved();
+      console.log('Found', recentGames.length, 'recent games');
+      this.processGames(recentGames, 'lichess', rating);
+      
+    } catch (error) {
+      console.error('Error fetching Lichess stats:', error);
+      throw error;
+    }
+  }
+
+  async fetchCurrentLichessTournamentsImproved() {
+    try {
+      // Try multiple approaches for better tournament detection
+      
+      // Approach 1: Check user activity for recent tournaments
+      const activityResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`);
+      if (!activityResponse.ok) {
+        return this.fetchCurrentTournamentsAlternative();
+      }
+      
+      const activities = await activityResponse.json();
+      const now = Date.now();
+      const currentTournaments = [];
+      
+      // Look through recent activities for tournament participation
+      for (const activity of activities) {
+        if (activity.tournaments) {
+          for (const tournament of activity.tournaments) {
+            // Check if tournament is recent (within last 4 hours)
+            const tournamentTime = new Date(tournament.date).getTime();
+            const hoursSinceStart = (now - tournamentTime) / (1000 * 60 * 60);
+            
+            if (hoursSinceStart < 4) {
+              try {
+                // Get full tournament details with retry logic
+                const tournamentData = await this.fetchTournamentWithRetry(tournament.id);
+                if (tournamentData) {
+                  // Check if tournament is currently active
+                  const startTime = tournamentData.startsAt;
+                  const finishTime = tournamentData.finishesAt;
+                  
+                  if (now >= startTime && (!finishTime || now <= finishTime)) {
+                    currentTournaments.push(tournamentData);
+                  }
+                }
+              } catch (error) {
+                console.log('Error fetching tournament details:', error);
+              }
+            }
+          }
         }
-      } catch (tournamentGamesError) {
-        console.log('Could not fetch tournament games:', tournamentGamesError);
       }
-    } else {
-      // Not in tournament, fetch regular stats
-      this.stats.isInTournament = false;
-      this.stats.tournamentName = '';
-      this.stats.tournamentType = '';
+      
+      return currentTournaments;
+    } catch (error) {
+      console.log('Error in primary tournament detection, trying alternative:', error);
+      return this.fetchCurrentTournamentsAlternative();
     }
-    
-    // Fallback to regular profile stats
-    const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
-    if (!profileResponse.ok) {
-      throw new Error('User not found');
-    }
-    const profile = await profileResponse.json();
+  }
 
-    // Get rating (classical > rapid > blitz)
-    rating = profile.perfs?.classical?.rating || 
-             profile.perfs?.rapid?.rating || 
-             profile.perfs?.blitz?.rating || 1500;
-
-    // Fetch recent games
-    const gamesResponse = await fetch(`https://lichess.org/api/games/user/${this.currentUsername}?max=50&rated=true&perfType=classical,rapid,blitz`);
-    if (!gamesResponse.ok) {
-      throw new Error('Could not fetch games');
+  async fetchCurrentTournamentsAlternative() {
+    try {
+      // Alternative approach: check recent games for tournament IDs
+      const gamesResponse = await fetch(`https://lichess.org/api/games/user/${this.currentUsername}?max=20&rated=true`);
+      if (!gamesResponse.ok) {
+        return [];
+      }
+      
+      const gamesText = await gamesResponse.text();
+      const games = gamesText.trim().split('\n').map(line => {
+        try {
+          return JSON.parse(line);
+        } catch {
+          return null;
+        }
+      }).filter(game => game !== null);
+      
+      const now = Date.now();
+      const recentTournamentIds = new Set();
+      
+      // Look for recent tournament games (last 4 hours)
+      for (const game of games) {
+        if (game.tournament) {
+          const gameTime = new Date(game.createdAt).getTime();
+          const hoursSinceGame = (now - gameTime) / (1000 * 60 * 60);
+          
+          if (hoursSinceGame < 4) {
+            recentTournamentIds.add(game.tournament);
+          }
+        }
+      }
+      
+      // Fetch details for recent tournaments
+      const currentTournaments = [];
+      for (const tournamentId of recentTournamentIds) {
+        try {
+          const tournamentData = await this.fetchTournamentWithRetry(tournamentId);
+          if (tournamentData) {
+            const startTime = tournamentData.startsAt;
+            const finishTime = tournamentData.finishesAt;
+            
+            if (now >= startTime && (!finishTime || now <= finishTime)) {
+              currentTournaments.push(tournamentData);
+            }
+          }
+        } catch (error) {
+          console.log('Error fetching tournament details:', error);
+        }
+      }
+      
+      return currentTournaments;
+    } catch (error) {
+      console.log('Error in alternative tournament detection:', error);
+      return [];
     }
-    
-    const gamesText = await gamesResponse.text();
-    const games = gamesText.trim().split('\n').map(line => {
+  }
+
+  async fetchTournamentWithRetry(tournamentId, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return JSON.parse(line);
-      } catch {
-        return null;
+        const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}`);
+        if (response.ok) {
+          return await response.json();
+        } else if (response.status === 429) {
+          // Rate limited, wait and retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+          continue;
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (error) {
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        await new Promise(resolve => setTimeout(resolve, 500 * attempt));
       }
-    }).filter(game => game !== null);
+    }
+    return null;
+  }
 
-    this.processGames(games, 'lichess', rating);
+  async fetchLichessTournamentGamesImproved(tournament) {
+    try {
+      // Method 1: Try to get tournament-specific games
+      const tournamentGamesUrl = `https://lichess.org/api/tournament/${tournament.id}/games/${this.currentUsername}`;
+      const response = await fetch(tournamentGamesUrl);
+      
+      if (response.ok) {
+        const gamesText = await response.text();
+        const games = gamesText.trim().split('\n').map(line => {
+          try {
+            return JSON.parse(line);
+          } catch {
+            return null;
+          }
+        }).filter(game => game !== null);
+        
+        if (games.length > 0) {
+          return games;
+        }
+      }
+      
+      // Method 2: Fallback to filtering recent games by tournament timeframe
+      const startTime = tournament.startsAt || (Date.now() - 6 * 60 * 60 * 1000); // 6 hours ago fallback
+      const recentGames = await this.fetchLichessRecentGamesImproved();
+      
+      const tournamentGames = recentGames.filter(game => {
+        const gameTime = new Date(game.createdAt).getTime();
+        return gameTime >= startTime && (game.tournament === tournament.id || gameTime >= startTime);
+      });
+      
+      return tournamentGames;
+    } catch (error) {
+      console.log('Error fetching tournament games:', error);
+      return [];
+    }
+  }
+
+  async fetchLichessRecentGamesImproved() {
+    try {
+      // Get recent games with better parameters for accuracy
+      const since = Date.now() - 24 * 60 * 60 * 1000; // Last 24 hours
+      // IMPORTANT: Add Accept header to get JSON format instead of PGN
+      const gamesUrl = `https://lichess.org/api/games/user/${this.currentUsername}?max=50&rated=true&since=${since}&sort=dateDesc&format=json`;
+      
+      console.log('Fetching Lichess games from:', gamesUrl);
+      
+      const response = await fetch(gamesUrl, {
+        headers: {
+          'Accept': 'application/x-ndjson'
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Could not fetch games: ${response.status} ${response.statusText}`);
+      }
+      
+      const gamesText = await response.text();
+      console.log('Raw Lichess games response length:', gamesText.length);
+      
+      if (!gamesText.trim()) {
+        console.log('No games found in response');
+        return [];
+      }
+      
+      const games = gamesText.trim().split('\n').map((line, index) => {
+        try {
+          const game = JSON.parse(line);
+          if (index < 3) {
+            console.log(`Sample game ${index + 1}:`, game);
+          }
+          return game;
+        } catch (error) {
+          console.warn('Failed to parse game line:', line, error);
+          return null;
+        }
+      }).filter(game => game !== null);
+      
+      console.log('Parsed', games.length, 'games total');
+      
+      // Sort by creation date (most recent first)
+      games.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      
+      return games;
+    } catch (error) {
+      console.error('Error fetching recent Lichess games:', error);
+      throw error;
+    }
+  }
+
+  getLichessRatingByType(profile, ratingType) {
+    if (!profile || !profile.perfs) {
+      return 1500;
+    }
+    
+    const perfs = profile.perfs;
+    
+    switch (ratingType) {
+      case 'bullet':
+        return perfs.bullet?.rating || 1500;
+      case 'blitz':
+        return perfs.blitz?.rating || 1500;
+      case 'rapid':
+        return perfs.rapid?.rating || 1500;
+      case 'classical':
+        return perfs.classical?.rating || 1500;
+      case 'best':
+      default:
+        // Return highest rating
+        const ratings = [
+          perfs.classical?.rating || 0,
+          perfs.rapid?.rating || 0,
+          perfs.blitz?.rating || 0,
+          perfs.bullet?.rating || 0
+        ];
+        return Math.max(...ratings) || 1500;
+    }
   }
 
   async fetchChessComStats() {
@@ -533,9 +804,28 @@ class ChessWidget {
 
       if (platform === 'lichess') {
         const winner = game.winner;
-        const playerColor = game.players.white.user?.id === this.currentUsername.toLowerCase() ? 'white' : 'black';
         
-        if (!winner) {
+        // Get player color - Lichess API has different format
+        let playerColor = null;
+        if (game.players?.white?.user?.id === this.currentUsername.toLowerCase()) {
+          playerColor = 'white';
+        } else if (game.players?.white?.user?.name === this.currentUsername) {
+          playerColor = 'white';
+        } else if (game.players?.black?.user?.id === this.currentUsername.toLowerCase()) {
+          playerColor = 'black';
+        } else if (game.players?.black?.user?.name === this.currentUsername) {
+          playerColor = 'black';
+        }
+        
+        console.log(`Lichess Game ${index + 1}:`, {
+          winner: winner,
+          playerColor: playerColor,
+          whiteUser: game.players?.white?.user,
+          blackUser: game.players?.black?.user,
+          status: game.status
+        });
+        
+        if (!winner || game.status === 'draw') {
           result = 'draw';
           draws++;
         } else if (winner === playerColor) {
@@ -617,15 +907,15 @@ class ChessWidget {
     }
 
     const totalGames = wins + losses + draws;
-    const winRate = totalGames > 0 ? Math.round((wins / totalGames) * 100) : 0;
+    const score = wins + (draws * 0.5);
 
-    console.log('Final stats:', { wins, losses, draws, winRate, totalGames });
+    console.log('Final stats:', { wins, losses, draws, score, totalGames });
 
     // Apply manual adjustments
     const adjustedWins = Math.max(0, wins + (this.stats.winsAdjustment || 0));
     const adjustedLosses = Math.max(0, losses + (this.stats.lossesAdjustment || 0));
     const adjustedTotalGames = adjustedWins + adjustedLosses + draws;
-    const adjustedWinRate = adjustedTotalGames > 0 ? Math.round((adjustedWins / adjustedTotalGames) * 100) : 0;
+    const adjustedScore = adjustedWins + (draws * 0.5);
 
     // Preserve tournament info when updating stats
     const existingTournamentInfo = {
@@ -644,7 +934,8 @@ class ChessWidget {
       wins: adjustedWins,
       losses: adjustedLosses,
       draws,
-      winRate: adjustedWinRate,
+      score: adjustedScore,
+      totalGames: adjustedTotalGames,
       lastGames: last10Games,
       currentStreak,
       streakType,
@@ -657,14 +948,17 @@ class ChessWidget {
     const mockGames = ['win', 'win', 'loss', 'win', 'win', 'win', 'win', 'loss', 'win', 'win'];
     const wins = mockGames.filter(g => g === 'win').length;
     const losses = mockGames.filter(g => g === 'loss').length;
-    const winRate = Math.round((wins / mockGames.length) * 100);
+    const draws = 0;
+    const totalGames = mockGames.length;
+    const score = wins + (draws * 0.5);
 
     this.stats = {
       rating: 1650,
       wins: wins,
       losses: losses,
-      draws: 0,
-      winRate: winRate,
+      draws: draws,
+      score: score,
+      totalGames: totalGames,
       lastGames: mockGames,
       currentStreak: 2,
       streakType: 'win'
@@ -679,6 +973,9 @@ class ChessWidget {
     const ratingEl = document.getElementById('rating');
     if (ratingEl) ratingEl.textContent = String(this.stats.rating);
 
+    // Update elo change display
+    this.updateEloChange();
+
     // Update wins/losses/draws
     const winsEl = document.getElementById('wins');
     const lossesEl = document.getElementById('losses');
@@ -688,13 +985,19 @@ class ChessWidget {
     if (lossesEl) lossesEl.textContent = String(this.stats.losses);
     if (drawsEl) drawsEl.textContent = String(this.stats.draws);
 
-    // Update win rate
+    // Update score/games
     const winPercentageEl = document.getElementById('win-percentage');
     const recordWinsEl = document.getElementById('record-wins');
     const recordLossesEl = document.getElementById('record-losses');
     const recordDrawsEl = document.getElementById('record-draws');
     
-    if (winPercentageEl) winPercentageEl.textContent = `${this.stats.winRate}%`;
+    if (winPercentageEl) {
+      // Display score/totalGames (e.g., "1.5/3")
+      const scoreDisplay = this.stats.totalGames > 0 
+        ? `${this.stats.score.toFixed(this.stats.score % 1 === 0 ? 0 : 1)}/${this.stats.totalGames}`
+        : '0/0';
+      winPercentageEl.textContent = scoreDisplay;
+    }
     if (recordWinsEl) recordWinsEl.textContent = `${this.stats.wins}W`;
     if (recordLossesEl) recordLossesEl.textContent = `${this.stats.losses}L`;
     if (recordDrawsEl) recordDrawsEl.textContent = `${this.stats.draws}D`;
@@ -750,7 +1053,7 @@ class ChessWidget {
     document.getElementById('rating').textContent = 'Error';
     document.getElementById('wins').textContent = '-';
     document.getElementById('losses').textContent = '-';
-    document.getElementById('win-percentage').textContent = 'Error';
+    document.getElementById('win-percentage').textContent = '0/0';
     console.error(message);
   }
 
@@ -1324,56 +1627,7 @@ class ChessWidget {
   }
 
   // Helper functions for tournament detection and rating selection
-  async fetchCurrentLichessTournaments() {
-    try {
-      // Check if user is currently in any tournaments by looking at their recent activity
-      const response = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`);
-      if (!response.ok) {
-        return [];
-      }
-      
-      const activities = await response.json();
-      const now = Date.now();
-      const currentTournaments = [];
-      
-      // Look for recent tournament activities
-      for (const activity of activities) {
-        if (activity.tournaments) {
-          for (const tournament of activity.tournaments) {
-            // Check if tournament is currently active (within last 4 hours)
-            const tournamentTime = new Date(tournament.date).getTime();
-            const hoursSinceStart = (now - tournamentTime) / (1000 * 60 * 60);
-            
-            if (hoursSinceStart < 4) {
-              // Fetch full tournament details
-              try {
-                const tournamentResponse = await fetch(`https://lichess.org/api/tournament/${tournament.id}`);
-                if (tournamentResponse.ok) {
-                  const tournamentData = await tournamentResponse.json();
-                  
-                  // Check if tournament is still active
-                  const startTime = tournamentData.startsAt;
-                  const finishTime = tournamentData.finishesAt;
-                  
-                  if (now >= startTime && (!finishTime || now <= finishTime)) {
-                    currentTournaments.push(tournamentData);
-                  }
-                }
-              } catch (error) {
-                console.log('Error fetching tournament details:', error);
-              }
-            }
-          }
-        }
-      }
-      
-      return currentTournaments;
-    } catch (error) {
-      console.log('Error fetching current tournaments:', error);
-      return [];
-    }
-  }
-
+  // Keep the improved tournament status method
   getLichessTournamentStatus(tournament) {
     const now = Date.now();
     const startTime = tournament.startsAt;
@@ -1394,43 +1648,6 @@ class ChessWidget {
       throw new Error('Could not fetch tournament standings');
     }
     return await response.json();
-  }
-
-  async fetchLichessTournamentGames(tournamentId) {
-    const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}/games/${this.currentUsername}`);
-    if (!response.ok) {
-      return [];
-    }
-    
-    const gamesText = await response.text();
-    const games = gamesText.trim().split('\n').map(line => {
-      try {
-        return JSON.parse(line);
-      } catch {
-        return null;
-      }
-    }).filter(game => game !== null);
-    
-    return games;
-  }
-
-  getRatingByTournamentType(profile, tournamentType) {
-    if (!profile.perfs) return 1500;
-    
-    switch (tournamentType) {
-      case 'bullet':
-        return profile.perfs.bullet?.rating || 1500;
-      case 'blitz':
-        return profile.perfs.blitz?.rating || 1500;
-      case 'rapid':
-        return profile.perfs.rapid?.rating || 1500;
-      case 'classical':
-        return profile.perfs.classical?.rating || 1500;
-      default:
-        return profile.perfs.blitz?.rating || 
-               profile.perfs.rapid?.rating || 
-               profile.perfs.classical?.rating || 1500;
-    }
   }
 
   // Chess.com tournament detection helpers
@@ -1919,6 +2136,7 @@ class ChessWidget {
     // Remove from config preview
     const sponsorPreview = document.getElementById('sponsor-preview');
     if (sponsorPreview) {
+
       sponsorPreview.style.display = 'none';
     }
     
@@ -1956,6 +2174,66 @@ class ChessWidget {
     }
     this.toggleSponsorConfig(showSponsor);
     this.toggleSponsorSection(showSponsor);
+  }
+  
+  togglePause() {
+    this.isPaused = !this.isPaused;
+    const pauseBtn = document.getElementById('pause-refresh-btn');
+    const pauseIcon = pauseBtn?.querySelector('i');
+    
+    if (this.isPaused) {
+      // Pause auto-refresh
+      this.stopAutoRefresh();
+      if (pauseBtn) pauseBtn.classList.add('paused');
+      if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'play');
+      
+      // Update next refresh display
+      const nextRefreshEl = document.getElementById('next-refresh');
+      if (nextRefreshEl) nextRefreshEl.textContent = '(paused)';
+    } else {
+      // Resume auto-refresh
+      if (pauseBtn) pauseBtn.classList.remove('paused');
+      if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'pause');
+      
+      // Start auto-refresh again
+      this.startAutoRefresh();
+    }
+    
+    // Refresh icons to update the icon change
+    refreshIcons();
+  }
+
+  updateEloChange() {
+    const eloChangeEl = document.getElementById('elo-change');
+    const eloChangeValueEl = document.getElementById('elo-change-value');
+    
+    if (!eloChangeEl || !eloChangeValueEl) return;
+    
+    // Set initial rating on first update
+    if (this.initialRating === null) {
+      this.initialRating = this.stats.rating;
+      eloChangeEl.style.display = 'none';
+      return;
+    }
+    
+    const ratingChange = this.stats.rating - this.initialRating;
+    
+    if (ratingChange === 0) {
+      eloChangeEl.style.display = 'none';
+      return;
+    }
+    
+    // Show elo change
+    eloChangeEl.style.display = 'block';
+    eloChangeEl.className = 'elo-change';
+    
+    if (ratingChange > 0) {
+      eloChangeEl.classList.add('positive');
+      eloChangeValueEl.textContent = `+${ratingChange}`;
+    } else {
+      eloChangeEl.classList.add('negative');
+      eloChangeValueEl.textContent = `${ratingChange}`;
+    }
   }
 }
 

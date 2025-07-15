@@ -204,12 +204,17 @@ body {
   position: relative;
 }
 
-/* Settings Icon */
-.settings-icon {
-  top: -12px;
-  right: -12px;
-  width: 32px;
-  height: 32px;
+/* Control Buttons (moved to bottom) */
+.control-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+  margin-top: var(--spacing-sm);
+}
+
+.control-btn {
+  width: 40px;
+  height: 40px;
   background: var(--muted);
   border: 2px solid var(--border);
   border-radius: 50%;
@@ -219,7 +224,119 @@ body {
   justify-content: center;
   color: var(--muted-foreground);
   transition: all 0.2s ease;
-  z-index: 10;
+}
+
+.control-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  transform: scale(1.1);
+}
+
+.control-btn.paused {
+  background: var(--warning);
+  color: #000;
+}
+
+.control-btn i {
+  width: 18px;
+  height: 18px;
+}
+
+/* Adjustment Controls (hidden from viewers at bottom) */
+.adjustment-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
+  background: var(--muted);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  width: max-content;
+  margin: auto;
+  margin-top: 20px;
+}
+
+.adjustment-controls:hover {
+  opacity: 1;
+}
+
+.adjust-group {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.adjust-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted-foreground);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  min-width: 12px;
+}
+
+.adjust-btn {
+  width: 24px;
+  height: 24px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
+  font-size: 10px;
+}
+
+.adjust-btn:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  transform: scale(1.05);
+}
+
+.adjust-btn i {
+  width: 12px;
+  height: 12px;
+}
+
+/* Elo Change Display */
+.elo-change {
+  margin-top: var(--spacing-xs);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.elo-change.positive {
+  color: var(--success);
+}
+
+.elo-change.negative {
+  color: var(--destructive);
+}
+
+.elo-change.neutral {
+  color: var(--muted-foreground);
+}
+
+/* Settings Icon (legacy - keeping for compatibility) */
+.settings-icon {
+  /* Removed positioning since it's now in control-buttons */
+  width: 40px;
+  height: 40px;
+  background: var(--muted);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-foreground);
+  transition: all 0.2s ease;
 }
 
 .settings-icon:hover {
@@ -229,8 +346,8 @@ body {
 }
 
 .settings-icon i {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* Rating Section */
@@ -356,55 +473,11 @@ body {
   margin-bottom: var(--spacing-sm);
 }
 
-.stat-card .value-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--spacing-xs);
-}
-
 .stat-card .value {
   font-size: 24px;
   font-weight: 700;
   font-family: var(--font-mono);
-  min-width: 2ch;
   text-align: center;
-}
-
-.adjust-btn {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--background);
-  color: var(--muted-foreground);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  opacity: 0.7;
-}
-
-.adjust-btn i {
-  width: 12px;
-  height: 12px;
-}
-
-.adjust-btn:hover {
-  opacity: 1;
-  background: var(--muted);
-  transform: scale(1.1);
-}
-
-.adjust-btn.plus:hover {
-  color: var(--success);
-  border-color: var(--success);
-}
-
-.adjust-btn.minus:hover {
-  color: var(--destructive);
-  border-color: var(--destructive);
 }
 
 /* Win Rate */
