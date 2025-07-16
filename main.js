@@ -2332,6 +2332,9 @@ class ChessWidget {
   resetStats() {
     // Confirm before resetting
     // Reset all stats to 0
+    if(!confirm('Are you sure you want to reset all stats? This cannot be undone.')) {
+      return;
+    }
     this.stats.wins = 0;
     this.stats.losses = 0;
     this.stats.draws = 0;
