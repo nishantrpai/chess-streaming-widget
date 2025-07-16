@@ -1083,8 +1083,11 @@ class ChessWidget {
     const gamesGrid = document.getElementById('games-grid');
     gamesGrid.innerHTML = '';
 
-    // Pad with empty results if less than 10 games
-    const games = [...this.stats.lastGames];
+    // Get actual games and reverse them (oldest first, newest last)
+    const actualGames = [...this.stats.lastGames].reverse();
+    
+    // Pad with unknowns at the end if less than 10 games
+    const games = [...actualGames];
     while (games.length < 10) {
       games.push('unknown');
     }
