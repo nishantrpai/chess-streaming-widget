@@ -22,6 +22,7 @@ class ChessWidget {
     this.twitchClient = null; // Twitch chat client
     this.twitchConnected = false;
     this.lastCommandTime = {}; // Rate limiting for commands
+    this.resetTime = null; // Track when stats were last reset
     this.stats = {
       rating: 0,
       wins: 0,
@@ -54,6 +55,7 @@ class ChessWidget {
     this.loadStoredConfig();
     this.loadAdjustments();
     this.loadSponsorSettings();
+    this.loadResetTime();
   }  bindEvents() {
     const startBtn = document.getElementById('start-tracking');
     const settingsIcon = document.getElementById('settings-icon');
@@ -850,8 +852,34 @@ class ChessWidget {
 
   processGames(games, platform, rating) {
     console.log('Processing games:', games.length, 'from platform:', platform);
+    console.log('Reset time:', this.resetTime);
 
-    const recentGames = games.slice(-50); // Take most recent 50 games
+    // Filter games to only include those after the last reset
+    let filteredGames = games;
+    if (this.resetTime) {
+      filteredGames = games.filter(game => {
+        let gameTime;
+        
+        if (platform === 'lichess') {
+          // Lichess uses createdAt timestamp (milliseconds)
+          gameTime = game.createdAt;
+        } else {
+          // Chess.com uses end_time (seconds, convert to milliseconds)
+          gameTime = game.end_time * 1000;
+        }
+        
+        const isAfterReset = gameTime > (this.resetTime?.getTime() || 0);
+        if (!isAfterReset) {
+          console.log('Filtering out game from before reset:', new Date(gameTime));
+        }
+        return isAfterReset;
+      });
+      
+      console.log('Filtered', games.length - filteredGames.length, 'games from before reset');
+      console.log('Processing', filteredGames.length, 'games after reset');
+    }
+
+    const recentGames = filteredGames.slice(-50); // Take most recent 50 games
     let wins = 0;
     let losses = 0;
     let draws = 0;
@@ -2238,6 +2266,19 @@ class ChessWidget {
     this.toggleSponsorSection(showSponsor);
   }
 
+  loadResetTime() {
+    const stored = localStorage.getItem('chess-widget-reset-time');
+    if (stored) {
+      try {
+        this.resetTime = new Date(stored);
+        console.log('Loaded reset time from storage:', this.resetTime);
+      } catch (error) {
+        console.log('Error parsing reset time from storage:', error);
+        this.resetTime = null;
+      }
+    }
+  }
+
   togglePause() {
     this.isPaused = !this.isPaused;
     const pauseBtn = document.getElementById('pause-refresh-btn');
@@ -2335,6 +2376,11 @@ class ChessWidget {
     if(!confirm('Are you sure you want to reset all stats? This cannot be undone.')) {
       return;
     }
+    
+    // Set reset time to current time
+    this.resetTime = new Date();
+    console.log('Reset time set to:', this.resetTime);
+    
     this.stats.wins = 0;
     this.stats.losses = 0;
     this.stats.draws = 0;
@@ -2343,14 +2389,19 @@ class ChessWidget {
     this.stats.currentStreak = 0;
     this.stats.streakType = 'win';
     this.stats.lastGames = [];
+    this.stats.brilliants = 0;
+    this.stats.blunders = 0;
 
     // Reset adjustments
     this.stats.winsAdjustment = 0;
     this.stats.lossesAdjustment = 0;
     this.stats.drawsAdjustment = 0;
+    this.stats.brilliantsAdjustment = 0;
+    this.stats.blundersAdjustment = 0;
 
-    // Clear stored adjustments
+    // Clear stored adjustments and save reset time
     localStorage.removeItem('chess-widget-adjustments');
+    localStorage.setItem('chess-widget-reset-time', this.resetTime.toISOString());
 
     // Reset initial rating for elo tracking
     this.initialRating = this.stats.rating;
@@ -2565,6 +2616,10 @@ class ChessWidget {
     // For now, allow reset but log it prominently
     console.log(`⚠️ RESET COMMAND from moderator ${username}`);
     
+    // Set reset time to current time
+    this.resetTime = new Date();
+    console.log('Reset time set to:', this.resetTime);
+    
     // Reset without confirmation dialog for mods
     this.stats.wins = 0;
     this.stats.losses = 0;
@@ -2574,14 +2629,19 @@ class ChessWidget {
     this.stats.currentStreak = 0;
     this.stats.streakType = 'win';
     this.stats.lastGames = [];
+    this.stats.brilliants = 0;
+    this.stats.blunders = 0;
     
     // Reset adjustments
     this.stats.winsAdjustment = 0;
     this.stats.lossesAdjustment = 0;
     this.stats.drawsAdjustment = 0;
+    this.stats.brilliantsAdjustment = 0;
+    this.stats.blundersAdjustment = 0;
     
-    // Clear stored adjustments
+    // Clear stored adjustments and save reset time
     localStorage.removeItem('chess-widget-adjustments');
+    localStorage.setItem('chess-widget-reset-time', this.resetTime.toISOString());
     
     // Reset initial rating for elo tracking
     this.initialRating = this.stats.rating;
