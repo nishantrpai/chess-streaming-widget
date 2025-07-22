@@ -100,20 +100,19 @@
         </div>
 
         <div class="win-loss-container">
-          <div class="stat-card wins">
-            <div class="icon"><i data-lucide="trophy"></i></div>
-            <div class="label">WINS</div>
-            <div class="value" id="wins">0</div>
+          <div class="stat-card brilliants">
+            <div class="icon">
+              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phpQcwe5E.png" alt="Brilliant" width="16" height="16">
+            </div>
+            <div class="label">BRILLIANTS</div>
+            <div class="value" id="brilliants">0</div>
           </div>
-          <div class="stat-card losses">
-            <div class="icon"><i data-lucide="heart-crack"></i></div>
-            <div class="label">LOSSES</div>
-            <div class="value" id="losses">0</div>
-          </div>
-          <div class="stat-card draws">
-            <div class="icon"><i data-lucide="equal"></i></div>
-            <div class="label">DRAWS</div>
-            <div class="value" id="draws">0</div>
+          <div class="stat-card blunders">
+            <div class="icon">
+              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phprZy2C4.png" alt="Blunder" width="16" height="16">
+            </div>
+            <div class="label">BLUNDERS</div>
+            <div class="value" id="blunders">0</div>
           </div>
         </div>
 
@@ -186,7 +185,7 @@
                 </div>
                 <div class="twitch-status" id="twitch-status">Disconnected</div>
                 <div class="twitch-commands">
-                  Commands: !win, !loss, !draw, !reset (mods only)
+                  Commands: !win, !loss, !draw, !brilliant [n], !blunder [n], !reset (mods only)
                 </div>
               </div>
             </div>
@@ -194,7 +193,7 @@
             <!-- Manual Adjustments -->
             <div class="manual-adjustments">
               <div class="adjust-group">
-                <span class="adjust-label">W:</span>
+                <span class="adjust-label">WIN:</span>
                 <button class="adjust-btn" data-type="wins" data-action="decrease" title="Decrease Wins">
                   <i data-lucide="minus"></i>
                 </button>
@@ -203,7 +202,7 @@
                 </button>
               </div>
               <div class="adjust-group">
-                <span class="adjust-label">L:</span>
+                <span class="adjust-label">LOSS:</span>
                 <button class="adjust-btn" data-type="losses" data-action="decrease" title="Decrease Losses">
                   <i data-lucide="minus"></i>
                 </button>
@@ -212,11 +211,29 @@
                 </button>
               </div>
               <div class="adjust-group">
-                <span class="adjust-label">D:</span>
+                <span class="adjust-label">DRAW:</span>
                 <button class="adjust-btn" data-type="draws" data-action="decrease" title="Decrease Draws">
                   <i data-lucide="minus"></i>
                 </button>
                 <button class="adjust-btn" data-type="draws" data-action="increase" title="Increase Draws">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+              <div class="adjust-group">
+                <span class="adjust-label">BRIL.:</span>
+                <button class="adjust-btn" data-type="brilliants" data-action="decrease" title="Decrease Brilliants">
+                  <i data-lucide="minus"></i>
+                </button>
+                <button class="adjust-btn" data-type="brilliants" data-action="increase" title="Increase Brilliants">
+                  <i data-lucide="plus"></i>
+                </button>
+              </div>
+              <div class="adjust-group">
+                <span class="adjust-label">BLUN.:</span>
+                <button class="adjust-btn" data-type="blunders" data-action="decrease" title="Decrease Blunders">
+                  <i data-lucide="minus"></i>
+                </button>
+                <button class="adjust-btn" data-type="blunders" data-action="increase" title="Increase Blunders">
                   <i data-lucide="plus"></i>
                 </button>
               </div>

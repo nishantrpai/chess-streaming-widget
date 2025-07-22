@@ -197,7 +197,7 @@ body {
 
 /* Stats Screen */
 .stats-container {
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-sm);
@@ -243,6 +243,9 @@ body {
 }
 
 /* Adjustment Controls (hidden from viewers at bottom) */
+.control-buttons-container {
+  width: 100%;
+}
 .adjustment-controls {
   display: flex;
   flex-direction: column;
@@ -252,16 +255,12 @@ body {
   background: var(--muted);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
-  opacity: 0.7;
   transition: opacity 0.2s ease;
-  width: max-content;
+  width: 100%;
   margin: auto;
   margin-top: 20px;
 }
 
-.adjustment-controls:hover {
-  opacity: 1;
-}
 
 .adjust-group {
   display: flex;
@@ -275,7 +274,7 @@ body {
   color: var(--muted-foreground);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  min-width: 12px;
+  min-width: 50px;
 }
 
 .adjust-btn {
@@ -440,9 +439,9 @@ body {
 
 /* Win/Loss Cards */
 .win-loss-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--spacing-md);
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
 }
 
 .stat-card {
@@ -453,6 +452,7 @@ body {
   text-align: center;
   position: relative;
   overflow: hidden;
+  flex-basis: 50%;
 }
 
 .stat-card .icon {

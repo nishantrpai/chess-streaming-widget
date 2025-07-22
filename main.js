@@ -28,6 +28,8 @@ class ChessWidget {
       wins: 0,
       losses: 0,
       draws: 0,
+      brilliants: 0,
+      blunders: 0,
       score: 0,
       totalGames: 0,
       lastGames: [],
@@ -45,7 +47,9 @@ class ChessWidget {
       // Manual adjustments
       winsAdjustment: 0,
       lossesAdjustment: 0,
-      drawsAdjustment: 0
+      drawsAdjustment: 0,
+      brilliantsAdjustment: 0,
+      blundersAdjustment: 0
     };
     this.init();
   }
@@ -120,7 +124,7 @@ class ChessWidget {
     });
   }
 
-  adjustStat(type, action) {
+  adjustStat(type, action, amount = 1) {
     let gameAdded = false;
 
     if (type === 'wins') {
@@ -180,6 +184,24 @@ class ChessWidget {
           this.stats.lastGames.splice(drawIndex, 1);
         }
       }
+    } else if (type === 'brilliants') {
+      if (action === 'increase') {
+        this.stats.brilliants += amount;
+        this.stats.brilliantsAdjustment += amount;
+      } else if (action === 'decrease' && this.stats.brilliants > 0) {
+        const decreaseAmount = Math.min(this.stats.brilliants, amount);
+        this.stats.brilliants -= decreaseAmount;
+        this.stats.brilliantsAdjustment -= decreaseAmount;
+      }
+    } else if (type === 'blunders') {
+      if (action === 'increase') {
+        this.stats.blunders += amount;
+        this.stats.blundersAdjustment += amount;
+      } else if (action === 'decrease' && this.stats.blunders > 0) {
+        const decreaseAmount = Math.min(this.stats.blunders, amount);
+        this.stats.blunders -= decreaseAmount;
+        this.stats.blundersAdjustment -= decreaseAmount;
+      }
     }
 
     // Recalculate streak if a game was added
@@ -203,6 +225,8 @@ class ChessWidget {
       winsAdjustment: this.stats.winsAdjustment || 0,
       lossesAdjustment: this.stats.lossesAdjustment || 0,
       drawsAdjustment: this.stats.drawsAdjustment || 0,
+      brilliantsAdjustment: this.stats.brilliantsAdjustment || 0,
+      blundersAdjustment: this.stats.blundersAdjustment || 0,
       timestamp: Date.now()
     };
     localStorage.setItem('chess-widget-adjustments', JSON.stringify(adjustments));
@@ -220,6 +244,12 @@ class ChessWidget {
         this.stats.winsAdjustment = adjustments.winsAdjustment || 0;
         this.stats.lossesAdjustment = adjustments.lossesAdjustment || 0;
         this.stats.drawsAdjustment = adjustments.drawsAdjustment || 0;
+        this.stats.brilliantsAdjustment = adjustments.brilliantsAdjustment || 0;
+        this.stats.blundersAdjustment = adjustments.blundersAdjustment || 0;
+        
+        // Set the actual stats
+        this.stats.brilliants = this.stats.brilliantsAdjustment;
+        this.stats.blunders = this.stats.blundersAdjustment;
       }
     }
   }
@@ -1067,10 +1097,14 @@ class ChessWidget {
     const winsEl = document.getElementById('wins');
     const lossesEl = document.getElementById('losses');
     const drawsEl = document.getElementById('draws');
+    const brilliantsEl = document.getElementById('brilliants');
+    const blundersEl = document.getElementById('blunders');
 
     if (winsEl) winsEl.textContent = String(this.stats.wins);
     if (lossesEl) lossesEl.textContent = String(this.stats.losses);
     if (drawsEl) drawsEl.textContent = String(this.stats.draws);
+    if (brilliantsEl) brilliantsEl.textContent = String(this.stats.brilliants);
+    if (blundersEl) blundersEl.textContent = String(this.stats.blunders);
 
     // Update score/games
     const winPercentageEl = document.getElementById('win-percentage');
@@ -1144,6 +1178,8 @@ class ChessWidget {
     document.getElementById('wins').textContent = '-';
     document.getElementById('losses').textContent = '-';
     document.getElementById('win-percentage').textContent = '0/0';
+    document.getElementById('brilliants').textContent = '-';
+    document.getElementById('blunders').textContent = '-';
     console.error(message);
   }
 
@@ -2570,7 +2606,17 @@ class ChessWidget {
   }
 
   handleModeratorCommand(username, message) {
-    const command = message.trim().toLowerCase();
+    const messageParts = message.trim().toLowerCase().split(' ');
+    const command = messageParts[0];
+    let amount = 1;
+    
+    // Check if there's a number after the command (e.g., !brilliant 3)
+    if (messageParts.length > 1) {
+      const parsedAmount = parseInt(messageParts[1], 10);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        amount = parsedAmount;
+      }
+    }
     
     // Rate limiting - only allow one command per user per 5 seconds
     const now = Date.now();
@@ -2599,6 +2645,18 @@ class ChessWidget {
         this.adjustStat('draws', 'increase');
         this.lastCommandTime[username] = now;
         console.log(`${username} added a draw via Twitch chat`);
+        break;
+        
+      case '!brilliant':
+        this.adjustStat('brilliants', 'increase', amount);
+        this.lastCommandTime[username] = now;
+        console.log(`${username} added ${amount} brilliant(s) via Twitch chat`);
+        break;
+        
+      case '!blunder':
+        this.adjustStat('blunders', 'increase', amount);
+        this.lastCommandTime[username] = now;
+        console.log(`${username} added ${amount} blunder(s) via Twitch chat`);
         break;
         
       case '!reset':
