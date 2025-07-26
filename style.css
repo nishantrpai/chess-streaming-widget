@@ -305,6 +305,7 @@ body {
 
 /* Elo Change Display */
 .elo-change {
+  display: none;
   margin-top: var(--spacing-xs);
   font-size: 0.75rem;
   font-weight: 500;
