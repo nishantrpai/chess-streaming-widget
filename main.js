@@ -25,6 +25,8 @@ class ChessWidget {
     this.resetTime = null; // Track when stats were last reset
     this.stats = {
       rating: 0,
+      initialRating: 0,
+      ratingChange: 0,
       wins: 0,
       losses: 0,
       draws: 0,
@@ -282,7 +284,7 @@ class ChessWidget {
         this.currentUsername = config.username;
         this.currentRatingType = config.ratingType || 'best';
         this.showStatsScreen();
-        this.refreshStats();
+        this.refreshStats(true);
       }
     }
   }
@@ -324,7 +326,7 @@ class ChessWidget {
 
     this.saveConfig();
     this.showStatsScreen();
-    await this.refreshStats();
+    await this.refreshStats(true);
   }
 
   showError(message) {
@@ -482,7 +484,9 @@ class ChessWidget {
 
     try {
       // First, get user profile for basic data and rating
-      const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`);
+      const profileResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}`, {
+        cache: 'no-store' // Disable caching
+      });
       if (!profileResponse.ok) {
         throw new Error('User not found');
       }
@@ -492,7 +496,7 @@ class ChessWidget {
       // Check for current tournaments with improved detection
       const currentTournaments = await this.fetchCurrentLichessTournamentsImproved();
 
-      let rating = 1500;
+      let rating = this.getLichessRatingByType(userProfile, this.currentRatingType);
       let games = [];
 
       if (currentTournaments && currentTournaments.length > 0) {
@@ -501,6 +505,8 @@ class ChessWidget {
         this.stats.isInTournament = true;
         this.stats.tournamentName = tournament.fullName || tournament.name || 'Lichess Tournament';
         this.stats.tournamentType = tournament.perf || 'blitz';
+        // Override rating only for tournament mode
+        rating = this.getLichessRatingByType(userProfile, this.stats.tournamentType);
         this.stats.tournamentTotalPlayers = tournament.nbPlayers;
         this.stats.tournamentStatus = this.getLichessTournamentStatus(tournament);
 
@@ -559,7 +565,9 @@ class ChessWidget {
       // Try multiple approaches for better tournament detection
 
       // Approach 1: Check user activity for recent tournaments
-      const activityResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`);
+      const activityResponse = await fetch(`https://lichess.org/api/user/${this.currentUsername}/activity?nb=20`, {
+        cache: 'no-store' // Disable caching
+      });
       if (!activityResponse.ok) {
         return this.fetchCurrentTournamentsAlternative();
       }
@@ -664,7 +672,9 @@ class ChessWidget {
   async fetchTournamentWithRetry(tournamentId, maxRetries = 3) {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}`);
+        const response = await fetch(`https://lichess.org/api/tournament/${tournamentId}`, {
+        cache: 'no-store' // Disable caching
+      });
         if (response.ok) {
           return await response.json();
         } else if (response.status === 429) {
@@ -688,7 +698,9 @@ class ChessWidget {
     try {
       // Method 1: Try to get tournament-specific games
       const tournamentGamesUrl = `https://lichess.org/api/tournament/${tournament.id}/games/${this.currentUsername}`;
-      const response = await fetch(tournamentGamesUrl);
+      const response = await fetch(tournamentGamesUrl, {
+        cache: 'no-store' // Disable caching
+      });
 
       if (response.ok) {
         const gamesText = await response.text();
@@ -733,7 +745,8 @@ class ChessWidget {
       const response = await fetch(gamesUrl, {
         headers: {
           'Accept': 'application/x-ndjson'
-        }
+        },
+        cache: 'no-store' // Disable caching
       });
 
       if (!response.ok) {
@@ -860,11 +873,27 @@ class ChessWidget {
         this.stats.tournamentName = '';
         this.stats.tournamentType = '';
 
-        // Get best available rating
-        rating = stats.chess_rapid?.last?.rating ||
-          stats.chess_blitz?.last?.rating ||
-          stats.chess_bullet?.last?.rating ||
-          stats.chess_daily?.last?.rating || 1200;
+        // Get rating based on user's rating type preference
+        switch (this.currentRatingType) {
+          case 'rapid':
+            rating = stats.chess_rapid?.last?.rating || 1200;
+            break;
+          case 'blitz':
+            rating = stats.chess_blitz?.last?.rating || 1200;
+            break;
+          case 'bullet':
+            rating = stats.chess_bullet?.last?.rating || 1200;
+            break;
+          case 'classical':
+            rating = stats.chess_daily?.last?.rating || 1200;
+            break;
+          case 'best':
+          default:
+            rating = stats.chess_rapid?.last?.rating ||
+              stats.chess_blitz?.last?.rating ||
+              stats.chess_bullet?.last?.rating ||
+              stats.chess_daily?.last?.rating || 1200;
+        }
 
         // Fetch regular recent games
         games = await this.fetchChessComRecentGames();
@@ -1046,8 +1075,17 @@ class ChessWidget {
       lossesAdjustment: this.stats.lossesAdjustment || 0
     };
 
+    // When rating changes, store initial rating if not set
+    if (this.stats.rating !== rating && !this.resetTime) {
+        if (this.stats.initialRating === 0) {
+            this.stats.initialRating = rating;
+        }
+    }
+
     this.stats = {
       rating,
+      initialRating: this.stats.initialRating,
+      ratingChange: this.stats.initialRating ? rating - this.stats.initialRating : 0,
       wins: adjustedWins,
       losses: adjustedLosses,
       draws,
@@ -1056,6 +1094,8 @@ class ChessWidget {
       lastGames: last10Games,
       currentStreak,
       streakType,
+      brilliants: this.stats.brilliants || 0,  // Preserve manual brilliant count
+      blunders: this.stats.blunders || 0,      // Preserve manual blunder count
       ...existingTournamentInfo
     };
   }
@@ -1088,7 +1128,20 @@ class ChessWidget {
 
     // Update rating
     const ratingEl = document.getElementById('rating');
-    if (ratingEl) ratingEl.textContent = String(this.stats.rating);
+    const ratingChangeEl = document.getElementById('rating-change');
+    if (ratingEl) {
+        ratingEl.textContent = String(this.stats.rating);
+        // Calculate rating change since initial rating
+        if (ratingChangeEl && this.stats.initialRating > 0 && !this.resetTime) {
+            const change = this.stats.rating - this.stats.initialRating;
+            // Always show the sign (+ for gains, - for losses)
+            const changeText = change >= 0 ? `+${change}` : `${change}`;
+            ratingChangeEl.textContent = changeText;
+            ratingChangeEl.className = change > 0 ? 'positive' : change < 0 ? 'negative' : '';
+        } else if (ratingChangeEl) {
+            ratingChangeEl.textContent = '';
+        }
+    }
 
     // Update elo change display
     this.updateEloChange();
@@ -1103,8 +1156,8 @@ class ChessWidget {
     if (winsEl) winsEl.textContent = String(this.stats.wins);
     if (lossesEl) lossesEl.textContent = String(this.stats.losses);
     if (drawsEl) drawsEl.textContent = String(this.stats.draws);
-    if (brilliantsEl) brilliantsEl.textContent = String(this.stats.brilliants);
-    if (blundersEl) blundersEl.textContent = String(this.stats.blunders);
+    if (brilliantsEl) brilliantsEl.textContent = String(this.stats.brilliants || 0);
+    if (blundersEl) blundersEl.textContent = String(this.stats.blunders || 0);
 
     // Update score/games
     const winPercentageEl = document.getElementById('win-percentage');
@@ -2779,27 +2832,18 @@ window.forceRefresh = function () {
   // Clear sessionStorage
   sessionStorage.clear();
 
-  // Unregister service worker
+  // Disable and clean up any service workers and caches
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(function (registrations) {
       for (let registration of registrations) {
-        registration.unregister();
+        registration.unregister().then(function() {
+          console.log('ServiceWorker unregistered successfully');
+        });
       }
     });
   }
-
-  // Clear all caches
-  if ('caches' in window) {
-    caches.keys().then(function (names) {
-      for (let name of names) {
-        caches.delete(name);
-      }
-    });
   }
 
-  // Force reload with cache bypass
-  window.location.reload(true);
-};
 
 // Auto-clear cache in development
 if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
