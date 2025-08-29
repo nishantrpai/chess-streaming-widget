@@ -498,7 +498,7 @@ body {
 }
 
 .percentage {
-  font-size: 32px;
+  font-size: 64px;
   font-weight: 700;
   color: var(--foreground);
   font-family: var(--font-mono);
