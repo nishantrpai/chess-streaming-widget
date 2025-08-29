@@ -509,7 +509,7 @@ body {
   flex-direction: column;
   gap: var(--spacing-xs);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 21px;
 }
 
 .record-wins {
