@@ -303,6 +303,22 @@ body {
   height: 12px;
 }
 
+.adjust-btn.remove-last {
+  width: auto;
+  min-width: 80px;
+  padding: 0 8px;
+  background: var(--accent-foreground);
+  color: white;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.adjust-btn.remove-last:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+  transform: scale(1.02);
+}
+
 /* Elo Change Display */
 .elo-change {
   display: none;

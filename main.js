@@ -144,7 +144,7 @@ class ChessWidget {
         this.stats.wins--;
         this.stats.winsAdjustment--;
         // Remove the most recent win from last games
-        const winIndex = this.stats.lastGames.findIndex(game => game === 'win');
+        const winIndex = this.stats.lastGames.lastIndexOf('win');
         if (winIndex !== -1) {
           this.stats.lastGames.splice(winIndex, 1);
         }
@@ -163,7 +163,7 @@ class ChessWidget {
         this.stats.losses--;
         this.stats.lossesAdjustment--;
         // Remove the most recent loss from last games
-        const lossIndex = this.stats.lastGames.findIndex(game => game === 'loss');
+        const lossIndex = this.stats.lastGames.lastIndexOf('loss');
         if (lossIndex !== -1) {
           this.stats.lastGames.splice(lossIndex, 1);
         }
@@ -182,7 +182,7 @@ class ChessWidget {
         this.stats.draws--;
         this.stats.drawsAdjustment--;
         // Remove the most recent draw from last games
-        const drawIndex = this.stats.lastGames.findIndex(game => game === 'draw');
+        const drawIndex = this.stats.lastGames.lastIndexOf('draw');
         if (drawIndex !== -1) {
           this.stats.lastGames.splice(drawIndex, 1);
         }
@@ -205,10 +205,27 @@ class ChessWidget {
         this.stats.blunders -= decreaseAmount;
         this.stats.blundersAdjustment -= decreaseAmount;
       }
+    } else if (type === 'remove-last') {
+      if (action === 'remove' && this.stats.lastGames.length > 0) {
+        // Remove the most recent game (first element in array since unshift adds to front)
+        const lastGame = this.stats.lastGames.shift();
+        
+        // Decrement the appropriate counter and adjustment
+        if (lastGame === 'win') {
+          this.stats.wins--;
+          this.stats.winsAdjustment--;
+        } else if (lastGame === 'loss') {
+          this.stats.losses--;
+          this.stats.lossesAdjustment--;
+        } else if (lastGame === 'draw') {
+          this.stats.draws--;
+          this.stats.drawsAdjustment--;
+        }
+      }
     }
 
-    // Recalculate streak if a game was added
-    if (gameAdded || action === 'decrease') {
+    // Recalculate streak if a game was added or removed
+    if (gameAdded || action === 'decrease' || action === 'remove') {
       this.recalculateStreak();
     }
 
