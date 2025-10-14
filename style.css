@@ -551,7 +551,7 @@ body {
 
 .games-grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(var(--games-count, 10), 1fr);
   gap: var(--spacing-xs);
 }
 

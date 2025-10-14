@@ -23,6 +23,7 @@ class ChessWidget {
     this.twitchConnected = false;
     this.lastCommandTime = {}; // Rate limiting for commands
     this.resetTime = null; // Track when stats were last reset
+    this.maxGamesDisplayed = 10; // Number of games to display in the grid
     this.stats = {
       rating: 0,
       initialRating: 0,
@@ -135,8 +136,8 @@ class ChessWidget {
         this.stats.winsAdjustment++;
         // Add a win to the last games (at the beginning for most recent)
         this.stats.lastGames.unshift('win');
-        if (this.stats.lastGames.length > 10) {
-          this.stats.lastGames.pop(); // Remove oldest if more than 10
+        if (this.stats.lastGames.length > this.maxGamesDisplayed) {
+          this.stats.lastGames.pop(); // Remove oldest if more than maxGamesDisplayed
         }
         gameAdded = true;
       } else if (action === 'decrease' && this.stats.wins > 0) {
@@ -154,7 +155,7 @@ class ChessWidget {
         this.stats.lossesAdjustment++;
         // Add a loss to the last games
         this.stats.lastGames.unshift('loss');
-        if (this.stats.lastGames.length > 10) {
+        if (this.stats.lastGames.length > this.maxGamesDisplayed) {
           this.stats.lastGames.pop();
         }
         gameAdded = true;
@@ -173,7 +174,7 @@ class ChessWidget {
         this.stats.drawsAdjustment++;
         // Add a draw to the last games
         this.stats.lastGames.unshift('draw');
-        if (this.stats.lastGames.length > 10) {
+        if (this.stats.lastGames.length > this.maxGamesDisplayed) {
           this.stats.lastGames.pop();
         }
         gameAdded = true;
@@ -942,9 +943,9 @@ class ChessWidget {
     let wins = 0;
     let losses = 0;
     let draws = 0;
-    const last10Games = [];
-
-    recentGames.forEach((game, index) => {
+    
+    // Take the last maxGamesDisplayed games for display
+    const last10Games = recentGames.slice(-this.maxGamesDisplayed).map(game => {
       let result;
       let isWin = false;
 
@@ -963,7 +964,7 @@ class ChessWidget {
           playerColor = 'black';
         }
 
-        console.log(`Lichess Game ${index + 1}:`, {
+        console.log(`Lichess Game:`, {
           winner: winner,
           playerColor: playerColor,
           whiteUser: game.players?.white?.user,
@@ -988,7 +989,7 @@ class ChessWidget {
         const blackPlayer = game.black?.username?.toLowerCase();
         const isWhite = whitePlayer === this.currentUsername.toLowerCase();
 
-        console.log(`Game ${index + 1}:`, {
+        console.log(`Chess.com Game:`, {
           white: game.white?.username,
           black: game.black?.username,
           whiteResult: game.white?.result,
@@ -1021,9 +1022,7 @@ class ChessWidget {
         }
       }
 
-      if (index >= recentGames.length - 10) {
-        last10Games.unshift(result); // Add to beginning to show most recent first
-      }
+      return result;
     });
 
     // Calculate streak from most recent games
@@ -1183,7 +1182,7 @@ class ChessWidget {
     const streakEl = document.getElementById('streak');
     if (streakEl) streakEl.textContent = streakText;
 
-    // Update last 10 games
+    // Update last games grid
     this.updateGamesGrid();
 
     // Update last updated time and start countdown
@@ -1198,12 +1197,15 @@ class ChessWidget {
     const gamesGrid = document.getElementById('games-grid');
     gamesGrid.innerHTML = '';
 
-    // Get actual games and reverse them (oldest first, newest last)
+    // Set the grid to display the correct number of columns
+    gamesGrid.style.setProperty('--games-count', this.maxGamesDisplayed.toString());
+
+    // Get actual games (already in correct order: newest first, oldest last)
     const actualGames = [...this.stats.lastGames].reverse();
     
-    // Pad with unknowns at the end if less than 10 games
+    // Pad with unknowns at the end if less than maxGamesDisplayed games
     const games = [...actualGames];
-    while (games.length < 10) {
+    while (games.length < this.maxGamesDisplayed) {
       games.push('unknown');
     }
 
@@ -1849,7 +1851,7 @@ class ChessWidget {
       const activeTournaments = [];
 
       // Check recent tournaments for active ones
-      for (const tournament of tournaments.slice(0, 10)) { // Check last 10 tournaments
+      for (const tournament of tournaments.slice(0, this.maxGamesDisplayed)) { // Check last 10 tournaments
         if (tournament.url) {
           const tournamentId = this.extractTournamentIdFromUrl(tournament.url);
           if (tournamentId) {
@@ -2292,7 +2294,7 @@ class ChessWidget {
       sponsorSection.style.display = 'block';
       console.log('Sponsor section shown');
 
-      // Move sponsor section below "Last 10 Games" if not already there
+      // Move sponsor section below "Last Games" if not already there
       const nextSibling = lastGamesSection.nextElementSibling;
       if (nextSibling !== sponsorSection) {
         lastGamesSection.insertAdjacentElement('afterend', sponsorSection);

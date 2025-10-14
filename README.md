@@ -9,7 +9,7 @@ A modern, responsive chess streaming widget designed for streamers who want to d
 - **Auto Tournament Detection**: Automatically detects if you're playing in a tournament
 - **Tournament-Specific Ratings**: Shows appropriate rating (bullet/blitz/rapid) based on tournament type
 - **Live Tournament Tracking**: Shows your position, points, and total players when in tournaments
-- **Last 10 Games**: Visual representation of recent game results
+- **Last 11 Games**: Visual representation of recent game results
 - **Streamer-Friendly**: Optimized for small window sizes (perfect for overlay)
 - **PWA Ready**: Can be installed as a Progressive Web App
 - **Auto-Save**: Remembers your configuration between sessions
@@ -42,7 +42,7 @@ The widget shows:
 - **Rating**: Current rating from the selected platform (tournament-specific when in tournament)
 - **Wins/Losses**: Win and loss counts with visual cards
 - **Win Rate**: Percentage with W/L record
-- **Last 10 Games**: Color-coded game results (Green=Win, Red=Loss, Gray=Draw)
+- **Last 11 Games**: Color-coded game results (Green=Win, Red=Loss, Gray=Draw)
 - **Current Streak**: Win or loss streak indicator
 - **Tournament Info**: When in a tournament:
   - Tournament name (highlighted when live)
