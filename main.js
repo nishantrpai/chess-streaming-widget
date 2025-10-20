@@ -23,7 +23,7 @@ class ChessWidget {
     this.twitchConnected = false;
     this.lastCommandTime = {}; // Rate limiting for commands
     this.resetTime = null; // Track when stats were last reset
-    this.maxGamesDisplayed = 10; // Number of games to display in the grid
+    this.maxGamesDisplayed = 11; // Number of games to display in the grid
     this.stats = {
       rating: 0,
       initialRating: 0,
