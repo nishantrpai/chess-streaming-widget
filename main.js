@@ -17,7 +17,7 @@ class ChessWidget {
     this.refreshInterval = null; // For auto-refresh
     this.refreshCountdownInterval = null; // For countdown display
     this.nextRefreshTime = 0;
-    this.isPaused = false; // For manual pause control
+    this.isPaused = true; // For manual pause control - paused by default
     this.initialRating = null; // Track starting rating for session
     this.twitchClient = null; // Twitch chat client
     this.twitchConnected = false;
@@ -344,6 +344,19 @@ class ChessWidget {
 
     this.saveConfig();
     this.showStatsScreen();
+    
+    // Auto-connect to Twitch chat if channel exists
+    try {
+      const autoConnected = await this.autoConnectTwitchChat(username);
+      if (autoConnected) {
+        console.log(`Auto-connected to Twitch chat for ${username}`);
+      } else {
+        console.log(`No live Twitch channel found for ${username}`);
+      }
+    } catch (error) {
+      console.log('Error during auto-connect attempt:', error);
+    }
+    
     await this.refreshStats(true);
   }
 
@@ -366,6 +379,9 @@ class ChessWidget {
   showStatsScreen() {
     document.getElementById('config-screen').classList.remove('active');
     document.getElementById('stats-screen').classList.add('active');
+
+    // Set initial pause button state to show it's paused
+    this.updatePauseButtonState();
 
     // Refresh icons after screen change
     setTimeout(() => refreshIcons(), 100);
@@ -400,11 +416,13 @@ class ChessWidget {
 
       this.updateUI();
 
-      // Always start auto-refresh for real-time updates (both tournament and regular play)
-      this.startAutoRefresh();
-
       // Update last updated time
       this.stats.lastUpdated = new Date();
+
+      // Only start auto-refresh if not paused and this isn't a background refresh
+      if (!this.isPaused && !isBackgroundRefresh) {
+        this.startAutoRefresh();
+      }
 
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -1205,6 +1223,9 @@ class ChessWidget {
     // Update last updated time and start countdown
     this.updateLastUpdatedTime();
     this.startRefreshCountdown();
+
+    // Update pause button state to reflect current status
+    this.updatePauseButtonState();
 
     // Refresh icons after UI update
     refreshIcons();
@@ -2387,31 +2408,45 @@ class ChessWidget {
     }
   }
 
-  togglePause() {
-    this.isPaused = !this.isPaused;
+  updatePauseButtonState() {
     const pauseBtn = document.getElementById('pause-refresh-btn');
     const pauseIcon = pauseBtn?.querySelector('i');
 
     if (this.isPaused) {
-      // Pause auto-refresh
-      this.stopAutoRefresh();
-      if (pauseBtn) pauseBtn.classList.add('paused');
-      if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'play');
-
+      if (pauseBtn) {
+        pauseBtn.classList.add('paused');
+        pauseBtn.title = 'Resume Auto-refresh';
+      }
+      if (pauseIcon) {
+        pauseIcon.setAttribute('data-lucide', 'play');
+      }
       // Update next refresh display
       const nextRefreshEl = document.getElementById('next-refresh');
       if (nextRefreshEl) nextRefreshEl.textContent = '(paused)';
     } else {
-      // Resume auto-refresh
-      if (pauseBtn) pauseBtn.classList.remove('paused');
-      if (pauseIcon) pauseIcon.setAttribute('data-lucide', 'pause');
-
-      // Start auto-refresh again
-      this.startAutoRefresh();
+      if (pauseBtn) {
+        pauseBtn.classList.remove('paused');
+        pauseBtn.title = 'Pause Auto-refresh';
+      }
+      if (pauseIcon) {
+        pauseIcon.setAttribute('data-lucide', 'pause');
+      }
     }
 
     // Refresh icons to update the icon change
     refreshIcons();
+  }
+
+  togglePause() {
+    this.isPaused = !this.isPaused;
+
+    if (this.isPaused) {
+      this.stopAutoRefresh();
+    } else {
+      this.startAutoRefresh();
+    }
+
+    this.updatePauseButtonState();
   }
 
   updateEloChange() {
@@ -2521,6 +2556,73 @@ class ChessWidget {
   }
 
   // Twitch Chat Integration
+  async checkTwitchChannelLive(username) {
+    try {
+      // Multiple approaches to check if Twitch channel exists/is accessible
+      console.log(`Checking Twitch channel: ${username}`);
+      
+      // Approach 1: Try to fetch the channel page (CORS-limited)
+      try {
+        const response = await fetch(`https://www.twitch.tv/${username}`, { 
+          method: 'HEAD',
+          mode: 'no-cors'
+        });
+        // Even with CORS errors, if it doesn't throw, channel likely exists
+        console.log(`Twitch channel ${username} appears to exist`);
+        return true;
+      } catch (headError) {
+        console.log('HEAD request failed, trying alternative check');
+      }
+
+      // Approach 2: Heuristic - assume channel exists for common usernames
+      // This is a fallback when CORS prevents direct checking
+      if (username && username.length >= 3 && username.length <= 25) {
+        // Twitch username format validation
+        const validUsernameFormat = /^[a-zA-Z0-9_]{3,25}$/.test(username);
+        if (validUsernameFormat) {
+          console.log(`Username ${username} has valid format, assuming channel exists`);
+          return true;
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      console.log('Could not check Twitch channel status:', error);
+      // If there's any error, assume channel exists and try to connect
+      // Better to attempt and fail than to miss a real channel
+      return true;
+    }
+  }
+
+  async autoConnectTwitchChat(username) {
+    console.log(`Checking for live Twitch channel: ${username}`);
+    
+    const channelExists = await this.checkTwitchChannelLive(username);
+    
+    if (channelExists) {
+      // Enable Twitch chat integration
+      const enableTwitchCheckbox = document.getElementById('enable-twitch');
+      if (enableTwitchCheckbox) {
+        enableTwitchCheckbox.checked = true;
+        this.toggleTwitchChat(true);
+      }
+      
+      // Set the channel name
+      const twitchChannelInput = document.getElementById('twitch-channel');
+      if (twitchChannelInput) {
+        twitchChannelInput.value = username;
+      }
+      
+      // Auto-connect
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UI update
+      this.connectToTwitchChat(username, true); // Pass true for auto-connect
+      
+      return true;
+    }
+    
+    return false;
+  }
+
   toggleTwitchChat(enabled) {
     const twitchConfig = document.getElementById('twitch-config');
     
@@ -2543,12 +2645,17 @@ class ChessWidget {
     this.disconnectFromTwitchChat();
   }
 
-  connectToTwitchChat(channel) {
+  connectToTwitchChat(channel, isAutoConnect = false) {
     if (this.twitchConnected) {
       this.disconnectFromTwitchChat();
     }
 
-    this.updateTwitchStatus('connecting', 'Connecting...');
+    // Update status based on connection type
+    if (isAutoConnect) {
+      this.updateTwitchStatus('auto-connecting', `Auto-connecting to ${channel}...`);
+    } else {
+      this.updateTwitchStatus('connecting', 'Connecting...');
+    }
     
     try {
       // Using Twitch IRC WebSocket
@@ -2563,7 +2670,7 @@ class ChessWidget {
       };
 
       this.twitchClient.onmessage = (event) => {
-        this.handleTwitchMessage(event.data);
+        this.handleTwitchMessage(event.data, channel, isAutoConnect);
       };
 
       this.twitchClient.onclose = () => {
@@ -2591,6 +2698,8 @@ class ChessWidget {
     this.updateTwitchStatus('disconnected', 'Disconnected');
   }
 
+
+
   updateTwitchStatus(status, message) {
     const statusEl = document.getElementById('twitch-status');
     const connectBtn = document.getElementById('twitch-connect-btn');
@@ -2600,13 +2709,25 @@ class ChessWidget {
       statusEl.textContent = message;
       statusEl.className = `twitch-status ${status}`;
       
-      if (status === 'connected') {
+      // Make auto-connection more prominent
+      if (status === 'auto-connecting') {
+        statusEl.style.color = '#9147ff'; // Twitch purple
+        statusEl.style.fontWeight = 'bold';
+      } else if (status === 'connected') {
+        statusEl.style.color = '#00f593'; // Twitch green
+        statusEl.style.fontWeight = 'bold';
         this.twitchConnected = true;
+      } else {
+        statusEl.style.color = '';
+        statusEl.style.fontWeight = '';
+        this.twitchConnected = false;
+      }
+      
+      if (status === 'connected' || status === 'auto-connecting') {
         // Show disconnect button, hide connect button
         if (connectBtn) connectBtn.style.display = 'none';
         if (disconnectBtn) disconnectBtn.style.display = 'flex';
       } else {
-        this.twitchConnected = false;
         // Show connect button, hide disconnect button
         if (connectBtn) connectBtn.style.display = 'flex';
         if (disconnectBtn) disconnectBtn.style.display = 'none';
@@ -2627,8 +2748,19 @@ class ChessWidget {
       }
       
       // Handle successful connection
-      if (line.includes('Welcome, GLHF!')) {
-        this.updateTwitchStatus('connected', 'Connected');
+      if (line.includes('Welcome, GLHF!') || line.includes('001')) {
+        // Check if this was an auto-connect by looking at current status
+        const statusEl = document.getElementById('twitch-status');
+        const isAutoConnect = statusEl && statusEl.textContent && statusEl.textContent.includes('Auto-connecting');
+        
+        if (isAutoConnect) {
+          // Extract channel name from status text
+          const channelMatch = statusEl.textContent.match(/Auto-connecting to (\w+)/);
+          const channelName = channelMatch ? channelMatch[1] : 'chat';
+          this.updateTwitchStatus('connected', `Auto-connected to ${channelName} 🎯`);
+        } else {
+          this.updateTwitchStatus('connected', 'Connected');
+        }
         continue;
       }
       

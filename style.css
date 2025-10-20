@@ -871,6 +871,44 @@ body {
   border: 1px solid rgba(234, 179, 8, 0.2);
 }
 
+.twitch-status.auto-connecting {
+  background: rgba(145, 71, 255, 0.1);
+  color: #9147ff;
+  border: 1px solid rgba(145, 71, 255, 0.2);
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+.auto-connect-badge {
+  background: linear-gradient(135deg, #9147ff 0%, #7b2cbf 100%);
+  color: white;
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  margin-top: var(--spacing-xs);
+  font-weight: bold;
+  animation: slideDown 0.3s ease-out;
+  border: 1px solid rgba(145, 71, 255, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .twitch-commands {
   font-size: 9px;
   color: var(--muted-foreground);
