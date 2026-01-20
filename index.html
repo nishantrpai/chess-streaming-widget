@@ -128,6 +128,11 @@
           </div>
         </div>
 
+        <!-- Break Timer -->
+        <div id="break-timer" class="break-timer" style="display: none;">
+          <div class="break-ticker">BREAK: 00:00</div>
+        </div>
+
         <div class="last-games">
           <div class="games-header">
             <span class="label">LAST GAMES</span>
@@ -185,7 +190,7 @@
                 </div>
                 <div class="twitch-status" id="twitch-status">Disconnected</div>
                 <div class="twitch-commands">
-                  Commands: !win, !loss, !draw, !brilliant [n], !blunder [n], !reset (mods only)
+                  Commands: !win, !loss, !draw, !brilliant [n], !blunder [n], !break [minutes] (mods only), !reset (mods only)
                 </div>
               </div>
             </div>
@@ -220,6 +225,7 @@
                 </button>
               </div>
               <div class="adjust-group">
+                <span class="adjust-label">REMOVE LAST:</span>
                 <button class="adjust-btn remove-last" data-type="remove-last" data-action="remove" title="Remove Last Game">
                   Remove Last
                 </button>
@@ -240,6 +246,16 @@
                 </button>
                 <button class="adjust-btn" data-type="blunders" data-action="increase" title="Increase Blunders">
                   <i data-lucide="plus"></i>
+                </button>
+              </div>
+              <div class="adjust-group break-timer-controls">
+                <span class="adjust-label">BREAK (MINUTES):</span>
+                <input type="number" id="break-minutes" placeholder="Min" min="1" max="60">
+                <button class="adjust-btn" id="start-break-btn" title="Start Break Timer">
+                  <i data-lucide="play"></i>
+                </button>
+                <button class="adjust-btn" id="stop-break-btn" title="Stop Break Timer" style="display: none;">
+                  <i data-lucide="square"></i>
                 </button>
               </div>
             </div>

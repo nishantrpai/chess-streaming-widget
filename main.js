@@ -23,6 +23,9 @@ class ChessWidget {
     this.twitchConnected = false;
     this.lastCommandTime = {}; // Rate limiting for commands
     this.resetTime = null; // Track when stats were last reset
+    this.breakActive = false; // Break timer active
+    this.breakEndTime = null; // End time of break
+    this.breakInterval = null; // Interval for updating break timer
     this.maxGamesDisplayed = 11; // Number of games to display in the grid
     this.stats = {
       rating: 0,
@@ -63,6 +66,7 @@ class ChessWidget {
     this.loadAdjustments();
     this.loadSponsorSettings();
     this.loadResetTime();
+    this.updateBreakDisplay();
   }  bindEvents() {
     const startBtn = document.getElementById('start-tracking');
     const settingsIcon = document.getElementById('settings-icon');
@@ -104,6 +108,32 @@ class ChessWidget {
     
     // Add event listeners for adjustment buttons
     this.bindAdjustmentButtons();
+    
+    // Add event listeners for break timer buttons
+    const startBreakBtn = document.getElementById('start-break-btn');
+    const stopBreakBtn = document.getElementById('stop-break-btn');
+    const breakMinutesInput = document.getElementById('break-minutes');
+    
+    if (startBreakBtn) {
+      startBreakBtn.addEventListener('click', () => {
+        const minutes = parseInt(breakMinutesInput.value);
+        if (!isNaN(minutes) && minutes > 0 && minutes <= 60) {
+          this.startBreak(minutes);
+          // Show stop button, hide start button
+          startBreakBtn.style.display = 'none';
+          stopBreakBtn.style.display = 'inline-block';
+        }
+      });
+    }
+    
+    if (stopBreakBtn) {
+      stopBreakBtn.addEventListener('click', () => {
+        this.endBreak();
+        // Show start button, hide stop button
+        startBreakBtn.style.display = 'inline-block';
+        stopBreakBtn.style.display = 'none';
+      });
+    }
     
     // Add event listeners for sponsor functionality
     this.bindSponsorEvents();
@@ -2555,6 +2585,63 @@ class ChessWidget {
     console.log('Stats reset to 0');
   }
 
+  // Break Timer Methods
+  startBreak(minutes) {
+    this.breakActive = true;
+    this.breakEndTime = Date.now() + minutes * 60 * 1000;
+    this.updateBreakDisplay();
+    
+    if (this.breakInterval) {
+      clearInterval(this.breakInterval);
+    }
+    
+    this.breakInterval = setInterval(() => {
+      if (Date.now() >= this.breakEndTime) {
+        this.endBreak();
+      } else {
+        this.updateBreakDisplay();
+      }
+    }, 1000);
+  }
+
+  endBreak() {
+    this.breakActive = false;
+    this.breakEndTime = null;
+    
+    if (this.breakInterval) {
+      clearInterval(this.breakInterval);
+      this.breakInterval = null;
+    }
+    
+    this.updateBreakDisplay();
+  }
+
+  updateBreakDisplay() {
+    const breakTimerEl = document.getElementById('break-timer');
+    const startBreakBtn = document.getElementById('start-break-btn');
+    const stopBreakBtn = document.getElementById('stop-break-btn');
+    
+    if (this.breakActive && this.breakEndTime) {
+      const remaining = Math.max(0, Math.ceil((this.breakEndTime - Date.now()) / 1000));
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      
+      breakTimerEl.style.display = 'block';
+      breakTimerEl.querySelector('.break-ticker').textContent = `BREAK: ${timeStr}`;
+      
+      // Show stop button, hide start button
+      if (startBreakBtn) startBreakBtn.style.display = 'none';
+      if (stopBreakBtn) stopBreakBtn.style.display = 'inline-block';
+    } else {
+      breakTimerEl.style.display = 'none';
+      
+      // Show start button, hide stop button
+      if (startBreakBtn) startBreakBtn.style.display = 'inline-block';
+      if (stopBreakBtn) stopBreakBtn.style.display = 'none';
+    }
+  }
+
   // Twitch Chat Integration
   async checkTwitchChannelLive(username) {
     try {
@@ -2813,6 +2900,16 @@ class ChessWidget {
     const messageParts = message.trim().toLowerCase().split(' ');
     const command = messageParts[0];
     let amount = 1;
+    
+    // Special handling for !break command
+    if (command === '!break') {
+      const minutes = parseInt(messageParts[1], 10);
+      if (!isNaN(minutes) && minutes > 0 && minutes <= 60) { // Max 60 minutes
+        this.startBreak(minutes);
+        console.log(`${username} started a ${minutes} minute break via Twitch chat`);
+      }
+      return;
+    }
     
     // Check if there's a number after the command (e.g., !brilliant 3)
     if (messageParts.length > 1) {

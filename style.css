@@ -266,6 +266,7 @@ body {
   display: flex;
   align-items: center;
   gap: var(--spacing-xs);
+  width: 100%;
 }
 
 .adjust-label {
@@ -275,11 +276,10 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   min-width: 50px;
+  flex-basis: 70%;
 }
 
 .adjust-btn {
-  width: 24px;
-  height: 24px;
   background: var(--accent-foreground);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -289,6 +289,7 @@ body {
   justify-content: center;
   color: var(--muted-foreground);
   transition: all 0.2s ease;
+  padding: 14px;
   font-size: 10px;
 }
 
@@ -304,18 +305,14 @@ body {
 }
 
 .adjust-btn.remove-last {
-  width: auto;
-  min-width: 80px;
-  padding: 0 8px;
   background: var(--accent-foreground);
   color: white;
-  font-size: 9px;
   font-weight: 500;
 }
 
 .adjust-btn.remove-last:hover {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--destructive);
+  color: var(--foreground);
   transform: scale(1.02);
 }
 
@@ -542,6 +539,57 @@ body {
   color: var(--warning);
   font-weight: 600;
 }
+
+/* Break Timer */
+.break-timer {
+  height: 22px;
+  background: green;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: var(--spacing-xs) 0;
+  margin-top: -10px;
+  overflow: hidden;
+}
+
+.break-ticker {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  color: white;
+  white-space: nowrap;
+  text-align: center;
+  /* animation: scroll 10s linear infinite; */
+}
+
+@keyframes scroll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+/* Break Timer Controls */
+.break-timer-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.break-timer-controls input {
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--foreground);
+  padding: 10px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 30px;
+  width: 55px;
+}
+
+.break-timer-controls input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 
 /* Last Games */
 .last-games {
@@ -919,6 +967,6 @@ body {
 .manual-adjustments {
   display: flex;
   flex-direction: column;
-  margin: auto;
+  width: 100%;
   gap: var(--spacing-sm);
 }
