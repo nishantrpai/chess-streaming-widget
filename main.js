@@ -2627,14 +2627,14 @@ class ChessWidget {
       const seconds = remaining % 60;
       const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
       
-      breakTimerEl.style.display = 'block';
+      breakTimerEl.style.visibility = 'visible';
       breakTimerEl.querySelector('.break-ticker').textContent = `BREAK: ${timeStr}`;
       
       // Show stop button, hide start button
       if (startBreakBtn) startBreakBtn.style.display = 'none';
       if (stopBreakBtn) stopBreakBtn.style.display = 'inline-block';
     } else {
-      breakTimerEl.style.display = 'none';
+      breakTimerEl.style.visibility = 'hidden';
       
       // Show start button, hide stop button
       if (startBreakBtn) startBreakBtn.style.display = 'inline-block';

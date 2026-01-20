@@ -308,6 +308,7 @@ body {
   background: var(--accent-foreground);
   color: white;
   font-weight: 500;
+  width: 42%;
 }
 
 .adjust-btn.remove-last:hover {
@@ -543,12 +544,9 @@ body {
 /* Break Timer */
 .break-timer {
   height: 22px;
-  background: green;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: var(--spacing-xs) 0;
-  margin-top: -10px;
+  background: var(--success);
+  margin-top: -15px;
+  border-radius: 0px 0px var(--radius-md) var(--radius-md);
   overflow: hidden;
 }
 
@@ -559,6 +557,12 @@ body {
   white-space: nowrap;
   text-align: center;
   /* animation: scroll 10s linear infinite; */
+}
+
+.break-timer-controls .adjust-btn {
+  padding: 6px;
+  margin-top: 5px;
+  font-size: 10px;
 }
 
 @keyframes scroll {
@@ -573,19 +577,15 @@ body {
   gap: var(--spacing-xs);
 }
 
-.break-timer-controls .adjust-label {
-  flex-basis: 53%;
-}
 .break-timer-controls input {
   background: var(--background);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--foreground);
   padding: 10px;
-  text-align: center;
+  text-align: left;
   font-family: var(--font-mono);
-  font-size: 30px;
-  width: 100px;
+  width: 100%;
 }
 
 .break-timer-controls input:focus {

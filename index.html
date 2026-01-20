@@ -102,14 +102,16 @@
         <div class="win-loss-container">
           <div class="stat-card brilliants">
             <div class="icon">
-              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phpQcwe5E.png" alt="Brilliant" width="16" height="16">
+              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phpQcwe5E.png"
+                alt="Brilliant" width="16" height="16">
             </div>
             <div class="label">BRILLIANTS</div>
             <div class="value" id="brilliants">0</div>
           </div>
           <div class="stat-card blunders">
             <div class="icon">
-              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phprZy2C4.png" alt="Blunder" width="16" height="16">
+              <img src="https://images.chesscomfiles.com/uploads/v1/images_users/tiny_mce/PedroPinhata/phprZy2C4.png"
+                alt="Blunder" width="16" height="16">
             </div>
             <div class="label">BLUNDERS</div>
             <div class="value" id="blunders">0</div>
@@ -129,7 +131,7 @@
         </div>
 
         <!-- Break Timer -->
-        <div id="break-timer" class="break-timer" style="display: none;">
+        <div id="break-timer" class="break-timer" style="visibility: hidden;">
           <div class="break-ticker">BREAK: 00:00</div>
         </div>
 
@@ -190,11 +192,12 @@
                 </div>
                 <div class="twitch-status" id="twitch-status">Disconnected</div>
                 <div class="twitch-commands">
-                  Commands: !win, !loss, !draw, !brilliant [n], !blunder [n], !break [minutes] (mods only), !reset (mods only)
+                  Commands: !win, !loss, !draw, !brilliant [n], !blunder [n], !break [minutes] (mods only), !reset (mods
+                  only)
                 </div>
               </div>
             </div>
-            
+
             <!-- Manual Adjustments -->
             <div class="manual-adjustments">
               <div class="adjust-group">
@@ -226,7 +229,8 @@
               </div>
               <div class="adjust-group">
                 <span class="adjust-label">REMOVE LAST:</span>
-                <button class="adjust-btn remove-last" data-type="remove-last" data-action="remove" title="Remove Last Game">
+                <button class="adjust-btn remove-last" data-type="remove-last" data-action="remove"
+                  title="Remove Last Game">
                   Remove Last
                 </button>
               </div>
@@ -249,20 +253,26 @@
                 </button>
               </div>
               <div class="adjust-group break-timer-controls">
-                <span class="adjust-label">BREAK (MINUTES):</span>
-                <input type="number" id="break-minutes" placeholder="Min" min="1" max="60">
-                <button class="adjust-btn" id="start-break-btn" title="Start Break Timer">
-                  <i data-lucide="play"></i>
-                </button>
-                <button class="adjust-btn" id="stop-break-btn" title="Stop Break Timer" style="display: none;">
+                <span class="adjust-label">BREAK:</span>
+                <div style="display: flex;flex-direction: column;width: 45%;">
+                  <input type="number" id="break-minutes" placeholder="Minutes" min="1" max="60">
+                  <button class="adjust-btn" id="start-break-btn" title="Start Break Timer">
+                    <i data-lucide="play"></i>
+                  </button>
+                                  <button class="adjust-btn" id="stop-break-btn" title="Stop Break Timer" style="display: none;">
                   <i data-lucide="square"></i>
                 </button>
+
+                </div>
+
               </div>
             </div>
           </div>
           <!-- twitter handle @painishant -->
-          <div class="twitter-handle" style="margin-top: 16px; color: #888; font-size: 12px; margin-top: 10px; width: 100%; text-align: center;">
-            <a href="https://twitter.com/painishant" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+          <div class="twitter-handle"
+            style="margin-top: 16px; color: #888; font-size: 12px; margin-top: 10px; width: 100%; text-align: center;">
+            <a href="https://twitter.com/painishant" target="_blank" rel="noopener noreferrer"
+              style="color: inherit; text-decoration: none;">
               @painishant
             </a>
           </div>
