@@ -573,6 +573,9 @@ body {
   gap: var(--spacing-xs);
 }
 
+.break-timer-controls .adjust-label {
+  flex-basis: 53%;
+}
 .break-timer-controls input {
   background: var(--background);
   border: 1px solid var(--border);
@@ -582,7 +585,7 @@ body {
   text-align: center;
   font-family: var(--font-mono);
   font-size: 30px;
-  width: 55px;
+  width: 100px;
 }
 
 .break-timer-controls input:focus {
